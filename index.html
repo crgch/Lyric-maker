@@ -592,7 +592,6 @@ async function exportPngSequence(){
   if(!cues.length){alert('먼저 가사를 불러와 주세요.');return}
   const duration=inferExportDuration();
   if(!(duration>0)){alert('출력 길이를 계산하지 못했어요. 음악 파일을 넣거나 마지막 가사의 종료 시간을 확인해 주세요.');return}
-  const JSZip=await ensureJsZip();
   const fps=+$('recordFps').value||60;
   const frameCount=Math.max(1,Math.ceil(duration*fps));
   const pad=Math.max(6,String(frameCount).length);
@@ -600,32 +599,57 @@ async function exportPngSequence(){
   const prevTime=audio.currentTime||0, prevPlaying=playing, prevRecording=recording;
   const prevDisabled=[$('recordBtn').disabled,$('stopRecordBtn').disabled,$('exportPngSeqBtn').disabled];
   $('recordBtn').disabled=true; $('stopRecordBtn').disabled=true; $('exportPngSeqBtn').disabled=true;
-  const zip=new JSZip();
-  zip.file('README.txt', 'Premiere Pro 사용법\n1) ZIP 압축 해제\n2) 첫 PNG 파일(예: lyrics_000001.png) 선택\n3) Image Sequence / 이미지 시퀀스 체크 후 가져오기\n4) 필요 시 Interpret Footage에서 프레임레이트를 '+fps+'fps로 확인\n\nExport area: '+(pngCropToBox?'작업 박스 영역':'전체 캔버스')+'\nCanvas: '+W+'x'+H+'\nOutput: '+region.w+'x'+region.h+'\nFrames: '+frameCount+'\nFPS: '+fps+'\nDuration: '+duration.toFixed(3)+'s\n');
   try{
-    setStatus('<b>PNG 시퀀스 준비 중…</b> Premiere용 투명 프레임을 만들고 있어요.');
+    setStatus('<b>PNG 내보내기 시작…</b> ZIP 모듈을 준비하고 있어요.');
+    await new Promise(r=>setTimeout(r,30));
+    const JSZip=await ensureJsZip();
+    if(!JSZip)throw new Error('ZIP 모듈을 사용할 수 없습니다.');
+    const zip=new JSZip();
+    zip.file('README.txt', 'Premiere Pro 사용법\n1) ZIP 압축 해제\n2) 첫 PNG 파일(예: lyrics_000001.png) 선택\n3) Image Sequence / 이미지 시퀀스 체크 후 가져오기\n4) 필요 시 Interpret Footage에서 프레임레이트를 '+fps+'fps로 확인\n\nExport area: '+(pngCropToBox?'작업 박스 영역':'전체 캔버스')+'\nCanvas: '+W+'x'+H+'\nOutput: '+region.w+'x'+region.h+'\nFrames: '+frameCount+'\nFPS: '+fps+'\nDuration: '+duration.toFixed(3)+'s\n');
+
+    const firstStart=cues.find(c=>Number.isFinite(c.start))?.start ?? 0;
+    let transparentBlob=null;
+    setStatus(`<b>PNG 시퀀스 준비 중…</b> ${pngCropToBox?'작업 박스 영역만':'전체 캔버스'} ${region.w}×${region.h} 크기로 만들고 있어요.`);
+
     for(let frame=0; frame<frameCount; frame++){
-      const t=Math.min(duration, frame/fps);
-      drawFrame(t,false,false);
-      const blob=await captureExportFrameBlob();
+      const t=frame/fps;
+      let blob;
+      if(t < firstStart-.0001){
+        if(!transparentBlob){
+          ctx.save();
+          ctx.setTransform(1,0,0,1,0,0);
+          ctx.clearRect(0,0,W,H);
+          ctx.restore();
+          transparentBlob=await captureExportFrameBlob();
+        }
+        blob=transparentBlob;
+      }else{
+        drawFrame(t,false,false);
+        blob=await captureExportFrameBlob();
+      }
       const fname=`lyrics_${String(frame+1).padStart(pad,'0')}.png`;
       zip.file(fname, blob, {binary:true});
-      if(frame%Math.max(1,Math.floor(frameCount/30))===0 || frame===frameCount-1){
+      if(frame%Math.max(1,Math.floor(frameCount/40))===0 || frame===frameCount-1){
         const pct=Math.round((frame+1)/frameCount*100);
         setStatus(`<b>PNG 시퀀스 추출 중…</b> ${frame+1}/${frameCount} 프레임 (${pct}%)`);
         await new Promise(r=>setTimeout(r,0));
       }
     }
-    setStatus('<b>ZIP 압축 중…</b> 프레임 묶음을 만드는 중이에요.');
-    const zipBlob=await zip.generateAsync({type:'blob',compression:'STORE'}, meta=>{ if(meta.percent!=null) setStatus(`<b>ZIP 압축 중…</b> ${Math.round(meta.percent)}%`); });
+
+    setStatus('<b>ZIP 생성 중…</b> 거의 다 됐어요.');
+    const zipBlob=await zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:1}}, meta=>{
+      if(meta.percent!=null)setStatus(`<b>ZIP 생성 중…</b> ${Math.round(meta.percent)}%`);
+    });
     downloadBlob(zipBlob, `premiere_png_sequence_${layout}_${pngCropToBox?'box':'full'}_${fps}fps.zip`);
-    setStatus('Premiere용 PNG 시퀀스 ZIP을 저장했어요. 압축을 푼 뒤 첫 PNG를 선택해서 Image Sequence로 가져오면 됩니다.');
+    setStatus('Premiere용 PNG 시퀀스 ZIP을 저장했어요. 가사 시작 전 프레임은 완전 투명입니다.');
   }catch(err){
-    console.error(err);
-    alert('PNG 시퀀스를 내보내지 못했습니다: '+err.message);
+    console.error('PNG export failed',err);
+    alert('PNG 시퀀스를 내보내지 못했습니다.\n\n'+(err?.message||err));
     setStatus('PNG 시퀀스 내보내기에 실패했어요.');
   }finally{
-    playing=prevPlaying; recording=prevRecording; audio.currentTime=prevTime; drawFrame();
+    playing=prevPlaying; recording=prevRecording;
+    try{audio.currentTime=prevTime}catch(e){}
+    drawFrame();
     $('recordBtn').disabled=prevDisabled[0]; $('stopRecordBtn').disabled=prevDisabled[1]; $('exportPngSeqBtn').disabled=prevDisabled[2];
   }
 }
