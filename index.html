@@ -185,6 +185,7 @@ dialog{border:none;border-radius:14px;padding:0;max-width:min(760px,92vw);width:
       <div class="two-col" style="margin-top:9px"><div class="field"><label class="lbl">프레임</label><select id="recordFps"><option value="30">30 fps</option><option value="60" selected>60 fps</option></select></div><div class="field"><label class="lbl">화질</label><select id="recordBitrate"><option value="12000000">12 Mbps</option><option value="20000000" selected>20 Mbps</option><option value="30000000">30 Mbps</option></select></div></div>
       <div class="record-grid" style="margin-top:10px"><button class="act primary" id="recordBtn" disabled>● 가사 영상 녹화</button><button class="act danger" id="stopRecordBtn" disabled>■ 녹화 종료</button></div>
       <div class="record-grid" style="margin-top:8px"><button class="act" id="exportPngSeqBtn">⬇ Premiere용 PNG 시퀀스 ZIP</button><button class="act" id="exportGuideBtn">사용법 안내</button></div>
+      <div class="toggle-row" style="margin-top:8px"><button class="chip on" id="pngCropToBoxBtn">PNG는 작업 박스 영역만 추출</button></div>
       <div class="note">기본 프레임은 60fps예요. Premiere용은 투명 PNG 시퀀스를 ZIP으로 묶어 내보냅니다. ZIP을 바로 가져오는 게 아니라 압축 해제 후 첫 PNG를 선택해 <b>Image Sequence</b>로 가져오면 돼요.</div>
       <div class="note">투명 WebM은 VP9을 우선 사용합니다. 브라우저/편집기 조합에서 알파가 보존되지 않으면 Premiere용 PNG 시퀀스를 권장해요.</div>
     </div>
@@ -403,10 +404,10 @@ function visibleKinds(){
   if(settings.displayMode==='stack5')return ['prev2','prev','current','next','next2'];
   return ['prev','current','next']
 }
-function drawLyricsAtTime(t){
+function drawLyricsAtTime(t,allowSelectedFallback=true){
   if(!cues.length)return;
   let i=activeIndexAt(t);
-  if(i<0){if(!playing&&selectedCueId)i=selectedIndex();else return}
+  if(i<0){if(allowSelectedFallback&&!playing&&selectedCueId)i=selectedIndex();else return}
   if(i<0)return;
   const p=(!playing&&!recording)?1:transitionProgress(i,t),e=easeOutCubic(p);
   if(isBoxCanvasMode()&&settings.boxMode!=='rows'){drawBoxLayoutAtTime(i,p,e);return}
@@ -439,7 +440,7 @@ function drawLyricsAtTime(t){
     drawCueBlock(cues[j],x+(ex.dx||0),slotCenters[idx]+(ex.dy||0),kind,ex);
   })
 }
-function drawFrame(timeOverride=null,showGuide=true){drawBackground();if(!isBoxCanvasMode())drawPanel();drawLyricsAtTime(timeOverride==null?(audio.currentTime||0):timeOverride);if(showGuide)drawCanvasBoxGuide();updateCanvasMeta()}
+function drawFrame(timeOverride=null,showGuide=true,allowSelectedFallback=true){drawBackground();if(!isBoxCanvasMode())drawPanel();drawLyricsAtTime(timeOverride==null?(audio.currentTime||0):timeOverride,allowSelectedFallback);if(showGuide)drawCanvasBoxGuide();updateCanvasMeta()}
 function loop(){if(!playing&&!recording)return;drawFrame();updateTransport();rafId=requestAnimationFrame(loop)}
 function updateTransport(){const d=audio.duration||0,t=audio.currentTime||0;$('curTime').textContent=fmt(t);$('durTime').textContent=fmt(d);if(d&&!$('seekBar').matches(':active'))$('seekBar').value=String(Math.round(t/d*1000));if(followPlayhead&&!editorLocked){const a=activeCue();if(a&&a.id!==selectedCueId)selectCue(a.id,false)}updateStampLabel()}
 function initAudioGraph(){if(audioCtx)return;audioCtx=new (window.AudioContext||window.webkitAudioContext)();srcNode=audioCtx.createMediaElementSource(audio);streamDest=audioCtx.createMediaStreamDestination();srcNode.connect(audioCtx.destination);srcNode.connect(streamDest)}
@@ -543,7 +544,7 @@ function formatSrtTime(s){s=Math.max(0,Number(s)||0);const ms=Math.round(s*1000)
 function exportSrt(){const valid=cues.filter(c=>Number.isFinite(c.start));if(!valid.length){alert('시간이 찍힌 가사가 없습니다.');return}let text='';valid.forEach((c,i)=>{const idx=cues.indexOf(c),end=safeEnd(c,idx);text+=`${i+1}\r\n${formatSrtTime(c.start)} --> ${formatSrtTime(end)}\r\n${normalizeLines(c.lines).filter(Boolean).join('\r\n')}\r\n\r\n`});downloadBlob(new Blob(['\uFEFF',text],{type:'application/x-subrip;charset=utf-8'}),'가사_편집본.srt')}
 function collectProject(){return {format:'schat-lyrics-maker',version:4,savedAt:new Date().toISOString(),lyricMode,layout,settings,cues,source:originalSourceText}}
 function saveProject(){downloadBlob(new Blob(['\uFEFF',JSON.stringify(collectProject(),null,2)],{type:'application/json;charset=utf-8'}),'스챗_가사프로젝트.schatlyrics.json')}
-async function loadProject(file){try{const data=JSON.parse((await file.text()).replace(/^\uFEFF/,''));if(data.format!=='schat-lyrics-maker')throw new Error('지원하지 않는 프로젝트 파일');lyricMode=['single','double','triple'].includes(data.lyricMode)?data.lyricMode:'double';layout=LAYOUTS[data.layout]?data.layout:'right';settings={...settings,...data.settings,lineStyles:(data.settings?.lineStyles||settings.lineStyles).map((x,i)=>({...settings.lineStyles[i],...x}))};cues=Array.isArray(data.cues)?data.cues.map(c=>({...c,id:c.id||uid(),lines:normalizeLines(c.lines),originalLines:normalizeLines(c.originalLines||c.lines)})):[];originalSourceText=data.source||'';$('lyricsSource').value=originalSourceText;selectedCueId=cues[0]?.id||null;syncControlsFromSettings();setCanvasLayout(layout,false);updateModeUI();renderCueList();renderEditor();setStatus('프로젝트를 복원했어요. 음악 파일만 다시 넣으면 재생/녹화할 수 있어요.')}catch(e){alert('프로젝트를 불러오지 못했습니다: '+e.message)}}
+async function loadProject(file){try{const data=JSON.parse((await file.text()).replace(/^\uFEFF/,''));if(data.format!=='schat-lyrics-maker')throw new Error('지원하지 않는 프로젝트 파일');lyricMode=['single','double','triple'].includes(data.lyricMode)?data.lyricMode:'double';layout=LAYOUTS[data.layout]?data.layout:'right';settings={...settings,...data.settings,lineStyles:(data.settings?.lineStyles||settings.lineStyles).map((x,i)=>({...settings.lineStyles[i],...x}))};cues=Array.isArray(data.cues)?data.cues.map(c=>({...c,id:c.id||uid(),lines:normalizeLines(c.lines),originalLines:normalizeLines(c.originalLines||c.lines)})):[];originalSourceText=data.source||'';pngCropToBox=data.pngCropToBox!==undefined?!!data.pngCropToBox:true;if($('pngCropToBoxBtn')){$('pngCropToBoxBtn').classList.toggle('on',pngCropToBox);$('pngCropToBoxBtn').textContent=pngCropToBox?'PNG는 작업 박스 영역만 추출':'PNG는 전체 캔버스 추출';}$('lyricsSource').value=originalSourceText;selectedCueId=cues[0]?.id||null;syncControlsFromSettings();setCanvasLayout(layout,false);updateModeUI();renderCueList();renderEditor();setStatus('프로젝트를 복원했어요. 음악 파일만 다시 넣으면 재생/녹화할 수 있어요.')}catch(e){alert('프로젝트를 불러오지 못했습니다: '+e.message)}}
 function syncControlsFromSettings(){const ids=['displayMode','textAlign','contentWidth','slotGap','anchorY','anchorX','prevOpacity','currentOpacity','nextOpacity','prevStateColor','currentStateColor','nextStateColor','boxMode','panelColor','panelOpacity','boxRadius','boxPadding','segmentGap','boxX','boxY','boxWidth','boxHeight','prevBoxColor','currentBoxColor','nextBoxColor','prevBoxOpacity','currentBoxOpacity','nextBoxOpacity','animationType','slideDirection','animationDistance','solidBgColor','outputBg'];ids.forEach(id=>{if($(id)&&settings[id]!==undefined)$(id).value=settings[id]});$('overrideStateText').classList.toggle('on',settings.overrideStateText);if($('animationDuration'))$('animationDuration').value=String(Math.round((settings.animationDuration||.45)*100));updateRangeOutputs()}
 function downloadBlob(blob,name){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500)}
 function updateRangeOutputs(){document.querySelectorAll('[data-out]').forEach(el=>{const id=el.dataset.out,v=$(id)?.value;if(v==null)return;if(['contentWidth','anchorY','anchorX','prevOpacity','currentOpacity','nextOpacity','panelOpacity','boxX','boxY','boxWidth','boxHeight','prevBoxOpacity','currentBoxOpacity','nextBoxOpacity'].includes(id))el.textContent=v+'%';else if(id==='animationDuration')el.textContent=(+v/100).toFixed(2)+'s';else el.textContent=v})}
@@ -561,6 +562,22 @@ function inferExportDuration(){
   return Number.isFinite(last.start)?last.start+Math.max(.8,settings.animationDuration||.45):0;
 }
 function canvasBlob(type='image/png',quality){return new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('캔버스를 이미지로 변환하지 못했습니다.')),type,quality))}
+function exportRegionRect(){
+  if(pngCropToBox){
+    const r=getBoxRectPx();
+    return {x:Math.max(0,Math.floor(r.x)),y:Math.max(0,Math.floor(r.y)),w:Math.max(2,Math.min(W-Math.floor(r.x),Math.round(r.w))),h:Math.max(2,Math.min(H-Math.floor(r.y),Math.round(r.h)))};
+  }
+  return {x:0,y:0,w:W,h:H};
+}
+async function captureExportFrameBlob(){
+  const r=exportRegionRect();
+  if(r.x===0&&r.y===0&&r.w===W&&r.h===H)return canvasBlob('image/png');
+  const off=document.createElement('canvas'); off.width=r.w; off.height=r.h;
+  const octx=off.getContext('2d',{alpha:true});
+  octx.clearRect(0,0,r.w,r.h);
+  octx.drawImage(canvas,r.x,r.y,r.w,r.h,0,0,r.w,r.h);
+  return new Promise((resolve,reject)=>off.toBlob(b=>b?resolve(b):reject(new Error('작업 박스 이미지를 만들지 못했습니다.')),'image/png'));
+}
 async function ensureJsZip(){
   if(window.JSZip)return window.JSZip;
   await new Promise((resolve,reject)=>{
@@ -579,17 +596,18 @@ async function exportPngSequence(){
   const fps=+$('recordFps').value||60;
   const frameCount=Math.max(1,Math.ceil(duration*fps));
   const pad=Math.max(6,String(frameCount).length);
+  const region=exportRegionRect();
   const prevTime=audio.currentTime||0, prevPlaying=playing, prevRecording=recording;
   const prevDisabled=[$('recordBtn').disabled,$('stopRecordBtn').disabled,$('exportPngSeqBtn').disabled];
   $('recordBtn').disabled=true; $('stopRecordBtn').disabled=true; $('exportPngSeqBtn').disabled=true;
   const zip=new JSZip();
-  zip.file('README.txt', 'Premiere Pro 사용법\n1) ZIP 압축 해제\n2) 첫 PNG 파일(예: lyrics_000001.png) 선택\n3) Image Sequence / 이미지 시퀀스 체크 후 가져오기\n4) 필요 시 Interpret Footage에서 프레임레이트를 '+fps+'fps로 확인\n\nCanvas: '+W+'x'+H+'\nFrames: '+frameCount+'\nFPS: '+fps+'\nDuration: '+duration.toFixed(3)+'s\n');
+  zip.file('README.txt', 'Premiere Pro 사용법\n1) ZIP 압축 해제\n2) 첫 PNG 파일(예: lyrics_000001.png) 선택\n3) Image Sequence / 이미지 시퀀스 체크 후 가져오기\n4) 필요 시 Interpret Footage에서 프레임레이트를 '+fps+'fps로 확인\n\nExport area: '+(pngCropToBox?'작업 박스 영역':'전체 캔버스')+'\nCanvas: '+W+'x'+H+'\nOutput: '+region.w+'x'+region.h+'\nFrames: '+frameCount+'\nFPS: '+fps+'\nDuration: '+duration.toFixed(3)+'s\n');
   try{
     setStatus('<b>PNG 시퀀스 준비 중…</b> Premiere용 투명 프레임을 만들고 있어요.');
     for(let frame=0; frame<frameCount; frame++){
       const t=Math.min(duration, frame/fps);
-      drawFrame(t,false);
-      const blob=await canvasBlob('image/png');
+      drawFrame(t,false,false);
+      const blob=await captureExportFrameBlob();
       const fname=`lyrics_${String(frame+1).padStart(pad,'0')}.png`;
       zip.file(fname, blob, {binary:true});
       if(frame%Math.max(1,Math.floor(frameCount/30))===0 || frame===frameCount-1){
@@ -600,7 +618,7 @@ async function exportPngSequence(){
     }
     setStatus('<b>ZIP 압축 중…</b> 프레임 묶음을 만드는 중이에요.');
     const zipBlob=await zip.generateAsync({type:'blob',compression:'STORE'}, meta=>{ if(meta.percent!=null) setStatus(`<b>ZIP 압축 중…</b> ${Math.round(meta.percent)}%`); });
-    downloadBlob(zipBlob, `premiere_png_sequence_${layout}_${fps}fps.zip`);
+    downloadBlob(zipBlob, `premiere_png_sequence_${layout}_${pngCropToBox?'box':'full'}_${fps}fps.zip`);
     setStatus('Premiere용 PNG 시퀀스 ZIP을 저장했어요. 압축을 푼 뒤 첫 PNG를 선택해서 Image Sequence로 가져오면 됩니다.');
   }catch(err){
     console.error(err);
@@ -612,7 +630,7 @@ async function exportPngSequence(){
   }
 }
 function showExportGuide(){
-  alert('Premiere용 PNG 시퀀스 사용법\n\n1. 메이커에서 “Premiere용 PNG 시퀀스 ZIP” 저장\n2. ZIP 압축 해제\n3. Premiere Pro에서 파일 > 가져오기\n4. 첫 PNG 파일만 선택 (예: lyrics_000001.png)\n5. Image Sequence / 이미지 시퀀스 체크\n6. 가져온 클립을 원본 영상 위 트랙에 올리기\n\n기본 프레임은 현재 선택된 '+(($('recordFps')&&$('recordFps').value)||60)+'fps를 사용합니다.');
+  alert('Premiere용 PNG 시퀀스 사용법\n\n1. 메이커에서 “Premiere용 PNG 시퀀스 ZIP” 저장\n2. ZIP 압축 해제\n3. Premiere Pro에서 파일 > 가져오기\n4. 첫 PNG 파일만 선택 (예: lyrics_000001.png)\n5. Image Sequence / 이미지 시퀀스 체크\n6. 가져온 클립을 원본 영상 위 트랙에 올리기\n\n기본 프레임은 현재 선택된 '+(($('recordFps')&&$('recordFps').value)||60)+'fps를 사용합니다.\nPNG 작업 박스 추출이 켜져 있으면 전체 캔버스가 아니라 현재 작업 박스 크기로만 출력됩니다.');
 }
 async function startRecording(){if(!audio.src)return;initAudioGraph();if(audioCtx.state==='suspended')await audioCtx.resume();const fps=+$('recordFps').value||30,bitrate=+$('recordBitrate').value||20000000;const cstream=canvas.captureStream(fps),combined=new MediaStream([...cstream.getVideoTracks(),...streamDest.stream.getAudioTracks()]);let mime='';['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'].some(m=>{if(MediaRecorder.isTypeSupported(m)){mime=m;return true}});try{recorder=new MediaRecorder(combined,{mimeType:mime||undefined,videoBitsPerSecond:bitrate,audioBitsPerSecond:256000})}catch(e){alert('이 브라우저에서 WebM 녹화를 시작하지 못했습니다. Chrome 계열 브라우저를 권장합니다.');return}chunks=[];recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};recorder.onstop=()=>{recording=false;$('recordBtn').disabled=false;$('stopRecordBtn').disabled=true;const blob=new Blob(chunks,{type:'video/webm'});downloadBlob(blob,`가사오버레이_${layout}_${settings.outputBg}.webm`);setStatus('녹화를 저장했어요. 투명 알파가 편집기에서 보이지 않으면 크로마키 모드로 다시 출력해 주세요.')};audio.currentTime=0;drawFrame();recorder.start(1000);await audio.play();playing=true;recording=true;$('recordBtn').disabled=true;$('stopRecordBtn').disabled=false;$('playBtn').textContent='❚❚';loop();setStatus(`<b>녹화 중</b> · ${W}×${H} · ${fps}fps · ${settings.outputBg==='transparent'?'투명 배경':'색 배경'}`)}
 function stopRecording(){audio.pause();playing=false;recording=false;$('playBtn').textContent='▶';if(recorder&&recorder.state!=='inactive')recorder.stop();drawFrame()}
@@ -631,7 +649,7 @@ $('overrideStateText').onclick=()=>{settings.overrideStateText=!settings.overrid
 ['prevStateColor','currentStateColor','nextStateColor'].forEach(id=>{$(id)?.addEventListener('input',()=>{settings.overrideStateText=true;$('overrideStateText').classList.add('on');settings[id]=$(id).value;drawFrame()})});
 ['prevBoxColor','currentBoxColor','nextBoxColor'].forEach(id=>{$(id)?.addEventListener('input',()=>{settings[id]=$(id).value;drawFrame()})});
 ['displayMode','textAlign','contentWidth','slotGap','anchorY','anchorX','prevOpacity','currentOpacity','nextOpacity','prevStateColor','currentStateColor','nextStateColor','boxMode','panelColor','panelOpacity','boxRadius','boxPadding','segmentGap','boxX','boxY','boxWidth','boxHeight','prevBoxColor','currentBoxColor','nextBoxColor','prevBoxOpacity','currentBoxOpacity','nextBoxOpacity','animationType','slideDirection','solidBgColor','outputBg'].forEach(id=>bindSetting(id,'value',v=>['contentWidth','slotGap','anchorY','anchorX','prevOpacity','currentOpacity','nextOpacity','panelOpacity','boxRadius','boxPadding','segmentGap','boxX','boxY','boxWidth','boxHeight','prevBoxOpacity','currentBoxOpacity','nextBoxOpacity'].includes(id)?+v:v));bindSetting('animationDuration','value',v=>+v/100);bindSetting('animationDistance','value',v=>+v);
-$('outputBg').addEventListener('change',updateCanvasMeta);$('recordBtn').onclick=startRecording;$('stopRecordBtn').onclick=stopRecording;$('exportPngSeqBtn').onclick=exportPngSequence;$('exportGuideBtn').onclick=showExportGuide;$('exportSrtBtn').onclick=exportSrt;$('saveProjectBtn').onclick=saveProject;$('loadProjectBtn').onclick=()=>$('projectInput').click();$('projectInput').onchange=e=>{if(e.target.files[0])loadProject(e.target.files[0]);e.target.value=''};
+$('outputBg').addEventListener('change',updateCanvasMeta);$('recordBtn').onclick=startRecording;$('stopRecordBtn').onclick=stopRecording;$('exportPngSeqBtn').onclick=exportPngSequence;$('exportGuideBtn').onclick=showExportGuide;$('pngCropToBoxBtn').onclick=()=>{pngCropToBox=!pngCropToBox;$('pngCropToBoxBtn').classList.toggle('on',pngCropToBox);$('pngCropToBoxBtn').textContent=pngCropToBox?'PNG는 작업 박스 영역만 추출':'PNG는 전체 캔버스 추출';};$('exportSrtBtn').onclick=exportSrt;$('saveProjectBtn').onclick=saveProject;$('loadProjectBtn').onclick=()=>$('projectInput').click();$('projectInput').onchange=e=>{if(e.target.files[0])loadProject(e.target.files[0]);e.target.value=''};
 
 syncControlsFromSettings();updateModeUI();setCanvasLayout('right');syncBoxControls();renderCueList();renderEditor();updateRangeOutputs();drawFrame();
 })();
