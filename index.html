@@ -182,9 +182,11 @@ dialog{border:none;border-radius:14px;padding:0;max-width:min(760px,92vw);width:
         <div class="field"><label class="lbl">출력 배경</label><select id="outputBg"><option value="transparent" selected>투명 배경</option><option value="chromaGreen">크로마키 초록</option><option value="chromaBlue">크로마키 파랑</option><option value="solid">단색</option></select></div>
         <div class="field"><label class="lbl">단색 배경</label><input type="color" id="solidBgColor" value="#000000"></div>
       </div>
-      <div class="two-col" style="margin-top:9px"><div class="field"><label class="lbl">프레임</label><select id="recordFps"><option value="30" selected>30 fps</option><option value="60">60 fps</option></select></div><div class="field"><label class="lbl">화질</label><select id="recordBitrate"><option value="12000000">12 Mbps</option><option value="20000000" selected>20 Mbps</option><option value="30000000">30 Mbps</option></select></div></div>
+      <div class="two-col" style="margin-top:9px"><div class="field"><label class="lbl">프레임</label><select id="recordFps"><option value="30">30 fps</option><option value="60" selected>60 fps</option></select></div><div class="field"><label class="lbl">화질</label><select id="recordBitrate"><option value="12000000">12 Mbps</option><option value="20000000" selected>20 Mbps</option><option value="30000000">30 Mbps</option></select></div></div>
       <div class="record-grid" style="margin-top:10px"><button class="act primary" id="recordBtn" disabled>● 가사 영상 녹화</button><button class="act danger" id="stopRecordBtn" disabled>■ 녹화 종료</button></div>
-      <div class="note">투명 WebM은 VP9을 우선 사용합니다. 브라우저/편집기 조합에서 알파가 보존되지 않으면 크로마키 초록·파랑 출력으로 바로 대체할 수 있어요.</div>
+      <div class="record-grid" style="margin-top:8px"><button class="act" id="exportPngSeqBtn">⬇ Premiere용 PNG 시퀀스 ZIP</button><button class="act" id="exportGuideBtn">사용법 안내</button></div>
+      <div class="note">기본 프레임은 60fps예요. Premiere용은 투명 PNG 시퀀스를 ZIP으로 묶어 내보냅니다. ZIP을 바로 가져오는 게 아니라 압축 해제 후 첫 PNG를 선택해 <b>Image Sequence</b>로 가져오면 돼요.</div>
+      <div class="note">투명 WebM은 VP9을 우선 사용합니다. 브라우저/편집기 조합에서 알파가 보존되지 않으면 Premiere용 PNG 시퀀스를 권장해요.</div>
     </div>
   </div>
 
@@ -225,6 +227,7 @@ dialog{border:none;border-radius:14px;padding:0;max-width:min(760px,92vw);width:
   </div>
 </dialog>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 (()=>{
 'use strict';
@@ -436,7 +439,7 @@ function drawLyricsAtTime(t){
     drawCueBlock(cues[j],x+(ex.dx||0),slotCenters[idx]+(ex.dy||0),kind,ex);
   })
 }
-function drawFrame(){drawBackground();if(!isBoxCanvasMode())drawPanel();drawLyricsAtTime(audio.currentTime||0);drawCanvasBoxGuide();updateCanvasMeta()}
+function drawFrame(timeOverride=null,showGuide=true){drawBackground();if(!isBoxCanvasMode())drawPanel();drawLyricsAtTime(timeOverride==null?(audio.currentTime||0):timeOverride);if(showGuide)drawCanvasBoxGuide();updateCanvasMeta()}
 function loop(){if(!playing&&!recording)return;drawFrame();updateTransport();rafId=requestAnimationFrame(loop)}
 function updateTransport(){const d=audio.duration||0,t=audio.currentTime||0;$('curTime').textContent=fmt(t);$('durTime').textContent=fmt(d);if(d&&!$('seekBar').matches(':active'))$('seekBar').value=String(Math.round(t/d*1000));if(followPlayhead&&!editorLocked){const a=activeCue();if(a&&a.id!==selectedCueId)selectCue(a.id,false)}updateStampLabel()}
 function initAudioGraph(){if(audioCtx)return;audioCtx=new (window.AudioContext||window.webkitAudioContext)();srcNode=audioCtx.createMediaElementSource(audio);streamDest=audioCtx.createMediaStreamDestination();srcNode.connect(audioCtx.destination);srcNode.connect(streamDest)}
@@ -548,6 +551,69 @@ function bindSetting(id,type='value',transform=v=>v){const el=$(id);if(!el)retur
 function wireDrop(drop,input,handler){drop.onclick=()=>input.click();input.onchange=e=>{if(e.target.files[0])handler(e.target.files[0])};['dragover','dragenter'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('drag')}));['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('drag')}));drop.addEventListener('drop',e=>{if(e.dataTransfer.files[0])handler(e.dataTransfer.files[0])})}
 function loadAudio(file){$('audioName').textContent=file.name;audio.src=URL.createObjectURL(file);audio.load();audio.onloadedmetadata=()=>{$('playBtn').disabled=false;$('seekBar').disabled=false;$('recordBtn').disabled=false;updateTransport();updateStampLabel();setStatus('음악을 불러왔어요. 재생하면서 가사 타이밍과 디자인을 확인할 수 있어요.')};audio.onended=()=>{playing=false;$('playBtn').textContent='▶';if(recording&&recorder?.state!=='inactive')recorder.stop();drawFrame()}}
 function loadLyricFile(file){$('lyricName').textContent=file.name;const r=new FileReader();r.onload=()=>{$('lyricsSource').value=String(r.result||'').replace(/^\uFEFF/,'');applyLyrics()};r.readAsText(file,'UTF-8')}
+
+function inferExportDuration(){
+  if(Number.isFinite(audio.duration)&&audio.duration>0)return audio.duration;
+  if(!cues.length)return 0;
+  const last=cues[cues.length-1];
+  const ends=cues.map(c=>Number.isFinite(c.end)?c.end:null).filter(v=>v!=null);
+  if(ends.length)return Math.max(...ends);
+  return Number.isFinite(last.start)?last.start+Math.max(.8,settings.animationDuration||.45):0;
+}
+function canvasBlob(type='image/png',quality){return new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('캔버스를 이미지로 변환하지 못했습니다.')),type,quality))}
+async function ensureJsZip(){
+  if(window.JSZip)return window.JSZip;
+  await new Promise((resolve,reject)=>{
+    const s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+    s.onload=resolve; s.onerror=()=>reject(new Error('JSZip 라이브러리를 불러오지 못했습니다. 인터넷 연결 상태를 확인해 주세요.'));
+    document.head.appendChild(s);
+  });
+  return window.JSZip;
+}
+async function exportPngSequence(){
+  if(!cues.length){alert('먼저 가사를 불러와 주세요.');return}
+  const duration=inferExportDuration();
+  if(!(duration>0)){alert('출력 길이를 계산하지 못했어요. 음악 파일을 넣거나 마지막 가사의 종료 시간을 확인해 주세요.');return}
+  const JSZip=await ensureJsZip();
+  const fps=+$('recordFps').value||60;
+  const frameCount=Math.max(1,Math.ceil(duration*fps));
+  const pad=Math.max(6,String(frameCount).length);
+  const prevTime=audio.currentTime||0, prevPlaying=playing, prevRecording=recording;
+  const prevDisabled=[$('recordBtn').disabled,$('stopRecordBtn').disabled,$('exportPngSeqBtn').disabled];
+  $('recordBtn').disabled=true; $('stopRecordBtn').disabled=true; $('exportPngSeqBtn').disabled=true;
+  const zip=new JSZip();
+  zip.file('README.txt', 'Premiere Pro 사용법\n1) ZIP 압축 해제\n2) 첫 PNG 파일(예: lyrics_000001.png) 선택\n3) Image Sequence / 이미지 시퀀스 체크 후 가져오기\n4) 필요 시 Interpret Footage에서 프레임레이트를 '+fps+'fps로 확인\n\nCanvas: '+W+'x'+H+'\nFrames: '+frameCount+'\nFPS: '+fps+'\nDuration: '+duration.toFixed(3)+'s\n');
+  try{
+    setStatus('<b>PNG 시퀀스 준비 중…</b> Premiere용 투명 프레임을 만들고 있어요.');
+    for(let frame=0; frame<frameCount; frame++){
+      const t=Math.min(duration, frame/fps);
+      drawFrame(t,false);
+      const blob=await canvasBlob('image/png');
+      const fname=`lyrics_${String(frame+1).padStart(pad,'0')}.png`;
+      zip.file(fname, blob, {binary:true});
+      if(frame%Math.max(1,Math.floor(frameCount/30))===0 || frame===frameCount-1){
+        const pct=Math.round((frame+1)/frameCount*100);
+        setStatus(`<b>PNG 시퀀스 추출 중…</b> ${frame+1}/${frameCount} 프레임 (${pct}%)`);
+        await new Promise(r=>setTimeout(r,0));
+      }
+    }
+    setStatus('<b>ZIP 압축 중…</b> 프레임 묶음을 만드는 중이에요.');
+    const zipBlob=await zip.generateAsync({type:'blob',compression:'STORE'}, meta=>{ if(meta.percent!=null) setStatus(`<b>ZIP 압축 중…</b> ${Math.round(meta.percent)}%`); });
+    downloadBlob(zipBlob, `premiere_png_sequence_${layout}_${fps}fps.zip`);
+    setStatus('Premiere용 PNG 시퀀스 ZIP을 저장했어요. 압축을 푼 뒤 첫 PNG를 선택해서 Image Sequence로 가져오면 됩니다.');
+  }catch(err){
+    console.error(err);
+    alert('PNG 시퀀스를 내보내지 못했습니다: '+err.message);
+    setStatus('PNG 시퀀스 내보내기에 실패했어요.');
+  }finally{
+    playing=prevPlaying; recording=prevRecording; audio.currentTime=prevTime; drawFrame();
+    $('recordBtn').disabled=prevDisabled[0]; $('stopRecordBtn').disabled=prevDisabled[1]; $('exportPngSeqBtn').disabled=prevDisabled[2];
+  }
+}
+function showExportGuide(){
+  alert('Premiere용 PNG 시퀀스 사용법\n\n1. 메이커에서 “Premiere용 PNG 시퀀스 ZIP” 저장\n2. ZIP 압축 해제\n3. Premiere Pro에서 파일 > 가져오기\n4. 첫 PNG 파일만 선택 (예: lyrics_000001.png)\n5. Image Sequence / 이미지 시퀀스 체크\n6. 가져온 클립을 원본 영상 위 트랙에 올리기\n\n기본 프레임은 현재 선택된 '+(($('recordFps')&&$('recordFps').value)||60)+'fps를 사용합니다.');
+}
 async function startRecording(){if(!audio.src)return;initAudioGraph();if(audioCtx.state==='suspended')await audioCtx.resume();const fps=+$('recordFps').value||30,bitrate=+$('recordBitrate').value||20000000;const cstream=canvas.captureStream(fps),combined=new MediaStream([...cstream.getVideoTracks(),...streamDest.stream.getAudioTracks()]);let mime='';['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'].some(m=>{if(MediaRecorder.isTypeSupported(m)){mime=m;return true}});try{recorder=new MediaRecorder(combined,{mimeType:mime||undefined,videoBitsPerSecond:bitrate,audioBitsPerSecond:256000})}catch(e){alert('이 브라우저에서 WebM 녹화를 시작하지 못했습니다. Chrome 계열 브라우저를 권장합니다.');return}chunks=[];recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};recorder.onstop=()=>{recording=false;$('recordBtn').disabled=false;$('stopRecordBtn').disabled=true;const blob=new Blob(chunks,{type:'video/webm'});downloadBlob(blob,`가사오버레이_${layout}_${settings.outputBg}.webm`);setStatus('녹화를 저장했어요. 투명 알파가 편집기에서 보이지 않으면 크로마키 모드로 다시 출력해 주세요.')};audio.currentTime=0;drawFrame();recorder.start(1000);await audio.play();playing=true;recording=true;$('recordBtn').disabled=true;$('stopRecordBtn').disabled=false;$('playBtn').textContent='❚❚';loop();setStatus(`<b>녹화 중</b> · ${W}×${H} · ${fps}fps · ${settings.outputBg==='transparent'?'투명 배경':'색 배경'}`)}
 function stopRecording(){audio.pause();playing=false;recording=false;$('playBtn').textContent='▶';if(recorder&&recorder.state!=='inactive')recorder.stop();drawFrame()}
 
@@ -565,7 +631,7 @@ $('overrideStateText').onclick=()=>{settings.overrideStateText=!settings.overrid
 ['prevStateColor','currentStateColor','nextStateColor'].forEach(id=>{$(id)?.addEventListener('input',()=>{settings.overrideStateText=true;$('overrideStateText').classList.add('on');settings[id]=$(id).value;drawFrame()})});
 ['prevBoxColor','currentBoxColor','nextBoxColor'].forEach(id=>{$(id)?.addEventListener('input',()=>{settings[id]=$(id).value;drawFrame()})});
 ['displayMode','textAlign','contentWidth','slotGap','anchorY','anchorX','prevOpacity','currentOpacity','nextOpacity','prevStateColor','currentStateColor','nextStateColor','boxMode','panelColor','panelOpacity','boxRadius','boxPadding','segmentGap','boxX','boxY','boxWidth','boxHeight','prevBoxColor','currentBoxColor','nextBoxColor','prevBoxOpacity','currentBoxOpacity','nextBoxOpacity','animationType','slideDirection','solidBgColor','outputBg'].forEach(id=>bindSetting(id,'value',v=>['contentWidth','slotGap','anchorY','anchorX','prevOpacity','currentOpacity','nextOpacity','panelOpacity','boxRadius','boxPadding','segmentGap','boxX','boxY','boxWidth','boxHeight','prevBoxOpacity','currentBoxOpacity','nextBoxOpacity'].includes(id)?+v:v));bindSetting('animationDuration','value',v=>+v/100);bindSetting('animationDistance','value',v=>+v);
-$('outputBg').addEventListener('change',updateCanvasMeta);$('recordBtn').onclick=startRecording;$('stopRecordBtn').onclick=stopRecording;$('exportSrtBtn').onclick=exportSrt;$('saveProjectBtn').onclick=saveProject;$('loadProjectBtn').onclick=()=>$('projectInput').click();$('projectInput').onchange=e=>{if(e.target.files[0])loadProject(e.target.files[0]);e.target.value=''};
+$('outputBg').addEventListener('change',updateCanvasMeta);$('recordBtn').onclick=startRecording;$('stopRecordBtn').onclick=stopRecording;$('exportPngSeqBtn').onclick=exportPngSequence;$('exportGuideBtn').onclick=showExportGuide;$('exportSrtBtn').onclick=exportSrt;$('saveProjectBtn').onclick=saveProject;$('loadProjectBtn').onclick=()=>$('projectInput').click();$('projectInput').onchange=e=>{if(e.target.files[0])loadProject(e.target.files[0]);e.target.value=''};
 
 syncControlsFromSettings();updateModeUI();setCanvasLayout('right');syncBoxControls();renderCueList();renderEditor();updateRangeOutputs();drawFrame();
 })();
