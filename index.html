@@ -186,6 +186,10 @@ dialog{border:none;border-radius:14px;padding:0;max-width:min(760px,92vw);width:
       <div class="record-grid" style="margin-top:10px"><button class="act primary" id="recordBtn" disabled>● 가사 영상 녹화</button><button class="act danger" id="stopRecordBtn" disabled>■ 녹화 종료</button></div>
       <div class="record-grid" style="margin-top:8px"><button class="act" id="exportPngSeqBtn">⬇ Premiere용 PNG 시퀀스 ZIP</button><button class="act" id="exportGuideBtn">사용법 안내</button></div>
       <div class="toggle-row" style="margin-top:8px"><button class="chip on" id="pngCropToBoxBtn">PNG는 작업 박스 영역만 추출</button></div>
+      <div id="pngProgressWrap" style="display:none;margin-top:8px">
+        <div style="height:8px;background:rgba(255,255,255,.08);border-radius:999px;overflow:hidden"><div id="pngProgressBar" style="width:0%;height:100%;background:currentColor;transition:width .08s linear"></div></div>
+        <div class="helper" id="pngProgressText" style="margin-top:5px">0%</div>
+      </div>
       <div class="note">기본 프레임은 60fps예요. Premiere용은 투명 PNG 시퀀스를 ZIP으로 묶어 내보냅니다. ZIP을 바로 가져오는 게 아니라 압축 해제 후 첫 PNG를 선택해 <b>Image Sequence</b>로 가져오면 돼요.</div>
       <div class="note">투명 WebM은 VP9을 우선 사용합니다. 브라우저/편집기 조합에서 알파가 보존되지 않으면 Premiere용 PNG 시퀀스를 권장해요.</div>
     </div>
@@ -241,7 +245,7 @@ let cues=[]; let selectedCueId=null; let lyricMode='double'; let followPlayhead=
 let playing=false, rafId=0, recording=false, recorder=null, chunks=[];
 let audioCtx=null, srcNode=null, streamDest=null;
 let layout='right'; let splitTimeMode='current';
-let originalSourceText='';
+let originalSourceText=''; let pngCropToBox=true;
 let settings={
   displayMode:'stack', textAlign:'center', contentWidth:82, slotGap:210, anchorY:50, anchorX:12,
   prevOpacity:38,currentOpacity:100,nextOpacity:38, prevStateColor:'#ffffff',currentStateColor:'#8a52ff',nextStateColor:'#ffffff', overrideStateText:false,
@@ -261,6 +265,8 @@ const fmt=s=>{s=Math.max(0,Number(s)||0);const m=Math.floor(s/60),q=s-m*60;retur
 const rgba=(hex,a)=>{const h=String(hex||'#000000').replace('#','');const r=parseInt(h.slice(0,2),16)||0,g=parseInt(h.slice(2,4),16)||0,b=parseInt(h.slice(4,6),16)||0;return `rgba(${r},${g},${b},${clamp(a,0,1)})`};
 function mixHex(a,b,t){const pa=[1,3,5].map(i=>parseInt(a.slice(i,i+2),16)),pb=[1,3,5].map(i=>parseInt(b.slice(i,i+2),16));return '#'+pa.map((v,i)=>Math.round(v+(pb[i]-v)*t).toString(16).padStart(2,'0')).join('')}
 function setStatus(t){$('status').innerHTML=t}
+function setPngProgress(pct,text=''){const w=$('pngProgressWrap'),b=$('pngProgressBar'),t=$('pngProgressText');if(!w||!b||!t)return;w.style.display='block';const p=clamp(Number(pct)||0,0,100);b.style.width=p+'%';t.textContent=(text?text+' · ':'')+Math.round(p)+'%'}
+function hidePngProgress(){const w=$('pngProgressWrap');if(w)w.style.display='none'}
 function modeCount(){return lyricMode==='triple'?3:lyricMode==='double'?2:1}
 function roleNames(){return lyricMode==='triple'?['원어','표음','번역']:lyricMode==='double'?['원어','번역']:['원어']}
 function normalizeLines(lines){const n=modeCount();return Array.from({length:n},(_,i)=>String(lines?.[i]??''))}
@@ -590,18 +596,23 @@ async function ensureJsZip(){
 }
 async function exportPngSequence(){
   if(!cues.length){alert('먼저 가사를 불러와 주세요.');return}
-  const duration=inferExportDuration();
-  if(!(duration>0)){alert('출력 길이를 계산하지 못했어요. 음악 파일을 넣거나 마지막 가사의 종료 시간을 확인해 주세요.');return}
-  const fps=+$('recordFps').value||60;
-  const frameCount=Math.max(1,Math.ceil(duration*fps));
-  const pad=Math.max(6,String(frameCount).length);
-  const region=exportRegionRect();
-  const prevTime=audio.currentTime||0, prevPlaying=playing, prevRecording=recording;
+  const prevTime=audio.currentTime||0, prevPlaying=playing, prevRecording=recording, wasPaused=audio.paused;
   const prevDisabled=[$('recordBtn').disabled,$('stopRecordBtn').disabled,$('exportPngSeqBtn').disabled];
   $('recordBtn').disabled=true; $('stopRecordBtn').disabled=true; $('exportPngSeqBtn').disabled=true;
+  playing=false;
+  try{ if(!audio.paused)audio.pause(); }catch(e){}
   try{
-    setStatus('<b>PNG 내보내기 시작…</b> ZIP 모듈을 준비하고 있어요.');
-    await new Promise(r=>setTimeout(r,30));
+    setPngProgress(0,'준비 중');
+    setStatus('<b>PNG 내보내기 시작…</b> 출력 정보를 확인하고 있어요.');
+    await new Promise(r=>setTimeout(r,40));
+
+    const duration=inferExportDuration();
+    if(!(duration>0))throw new Error('출력 길이를 계산하지 못했어요. 음악 파일을 넣거나 마지막 가사의 종료 시간을 확인해 주세요.');
+    const fps=+$('recordFps').value||60;
+    const frameCount=Math.max(1,Math.ceil(duration*fps));
+    const pad=Math.max(6,String(frameCount).length);
+    const region=exportRegionRect();
+
     const JSZip=await ensureJsZip();
     if(!JSZip)throw new Error('ZIP 모듈을 사용할 수 없습니다.');
     const zip=new JSZip();
@@ -609,7 +620,8 @@ async function exportPngSequence(){
 
     const firstStart=cues.find(c=>Number.isFinite(c.start))?.start ?? 0;
     let transparentBlob=null;
-    setStatus(`<b>PNG 시퀀스 준비 중…</b> ${pngCropToBox?'작업 박스 영역만':'전체 캔버스'} ${region.w}×${region.h} 크기로 만들고 있어요.`);
+    const updateEvery=Math.max(1,Math.min(12,Math.floor(frameCount/100)||1));
+    setStatus(`<b>PNG 시퀀스 추출 중…</b> ${pngCropToBox?'작업 박스':'전체 캔버스'} ${region.w}×${region.h} · ${fps}fps`);
 
     for(let frame=0; frame<frameCount; frame++){
       const t=frame/fps;
@@ -629,21 +641,32 @@ async function exportPngSequence(){
       }
       const fname=`lyrics_${String(frame+1).padStart(pad,'0')}.png`;
       zip.file(fname, blob, {binary:true});
-      if(frame%Math.max(1,Math.floor(frameCount/40))===0 || frame===frameCount-1){
-        const pct=Math.round((frame+1)/frameCount*100);
-        setStatus(`<b>PNG 시퀀스 추출 중…</b> ${frame+1}/${frameCount} 프레임 (${pct}%)`);
-        await new Promise(r=>setTimeout(r,0));
+
+      if(frame%updateEvery===0 || frame===frameCount-1){
+        const pct=(frame+1)/frameCount*90;
+        setPngProgress(pct,`프레임 ${frame+1}/${frameCount}`);
+        setStatus(`<b>PNG 시퀀스 추출 중…</b> ${frame+1}/${frameCount} 프레임 · ${Math.round((frame+1)/frameCount*100)}%`);
+        await new Promise(r=>requestAnimationFrame(()=>r()));
       }
     }
 
-    setStatus('<b>ZIP 생성 중…</b> 거의 다 됐어요.');
-    const zipBlob=await zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:1}}, meta=>{
-      if(meta.percent!=null)setStatus(`<b>ZIP 생성 중…</b> ${Math.round(meta.percent)}%`);
+    setPngProgress(92,'ZIP 생성 중');
+    setStatus('<b>ZIP 생성 중…</b> PNG 프레임을 하나로 묶고 있어요.');
+    // PNG 자체가 이미 압축 포맷이라 재압축보다 STORE가 훨씬 빠르고 안정적임.
+    const zipBlob=await zip.generateAsync({type:'blob',compression:'STORE'}, meta=>{
+      if(meta.percent!=null){
+        const p=92+(meta.percent/100)*8;
+        setPngProgress(p,'ZIP 생성 중');
+        if(Math.round(meta.percent)%5===0)setStatus(`<b>ZIP 생성 중…</b> ${Math.round(meta.percent)}%`);
+      }
     });
+    setPngProgress(100,'완료');
     downloadBlob(zipBlob, `premiere_png_sequence_${layout}_${pngCropToBox?'box':'full'}_${fps}fps.zip`);
     setStatus('Premiere용 PNG 시퀀스 ZIP을 저장했어요. 가사 시작 전 프레임은 완전 투명입니다.');
+    setTimeout(hidePngProgress,1800);
   }catch(err){
     console.error('PNG export failed',err);
+    setPngProgress(0,'실패');
     alert('PNG 시퀀스를 내보내지 못했습니다.\n\n'+(err?.message||err));
     setStatus('PNG 시퀀스 내보내기에 실패했어요.');
   }finally{
@@ -651,8 +674,11 @@ async function exportPngSequence(){
     try{audio.currentTime=prevTime}catch(e){}
     drawFrame();
     $('recordBtn').disabled=prevDisabled[0]; $('stopRecordBtn').disabled=prevDisabled[1]; $('exportPngSeqBtn').disabled=prevDisabled[2];
+    // 내보내기 후 자동 재생은 하지 않음. 사용자가 다시 재생 버튼을 누르면 됨.
+    if(prevPlaying&&!wasPaused){$('playBtn').textContent='▶'}
   }
 }
+
 function showExportGuide(){
   alert('Premiere용 PNG 시퀀스 사용법\n\n1. 메이커에서 “Premiere용 PNG 시퀀스 ZIP” 저장\n2. ZIP 압축 해제\n3. Premiere Pro에서 파일 > 가져오기\n4. 첫 PNG 파일만 선택 (예: lyrics_000001.png)\n5. Image Sequence / 이미지 시퀀스 체크\n6. 가져온 클립을 원본 영상 위 트랙에 올리기\n\n기본 프레임은 현재 선택된 '+(($('recordFps')&&$('recordFps').value)||60)+'fps를 사용합니다.\nPNG 작업 박스 추출이 켜져 있으면 전체 캔버스가 아니라 현재 작업 박스 크기로만 출력됩니다.');
 }
