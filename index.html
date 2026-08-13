@@ -123,7 +123,7 @@ dialog{border:none;border-radius:14px;padding:0;max-width:min(760px,92vw);width:
     <div class="card">
       <h3>가사 레이아웃 · 상태</h3>
       <div class="two-col">
-        <div class="field"><label class="lbl">표시 방식</label><select id="displayMode"><option value="stack" selected>이전 · 현재 · 다음 3단</option><option value="current">현재 가사만</option><option value="prevcurrent">이전 + 현재</option><option value="currentnext">현재 + 다음</option></select></div>
+        <div class="field"><label class="lbl">표시 방식</label><select id="displayMode"><option value="stack" selected>이전 · 현재 · 다음 3단</option><option value="stack5">전전 · 전 · 현 · 후 · 후후 5단</option><option value="current">현재 가사만</option><option value="prevcurrent">이전 + 현재</option><option value="currentnext">현재 + 다음</option></select></div>
         <div class="field"><label class="lbl">텍스트 정렬</label><select id="textAlign"><option value="left">왼쪽</option><option value="center" selected>가운데</option><option value="right">오른쪽</option></select></div>
       </div>
       <div class="range-line"><span class="lbl">내용 폭</span><input type="range" id="contentWidth" min="45" max="94" value="82"><span class="val" data-out="contentWidth">82%</span></div>
@@ -132,11 +132,11 @@ dialog{border:none;border-radius:14px;padding:0;max-width:min(760px,92vw);width:
       <div class="range-line"><span class="lbl">좌우 여백</span><input type="range" id="anchorX" min="6" max="50" value="12"><span class="val" data-out="anchorX">12%</span></div>
       <div class="divider"></div>
       <div class="three-col">
-        <div class="style-block"><h4>이전 가사</h4><div class="color-control"><input type="color" id="prevStateColor" value="#ffffff"><span class="lbl">강조색</span></div><div class="range-line" style="grid-template-columns:72px 1fr 34px"><span class="lbl">투명도</span><input type="range" id="prevOpacity" min="0" max="100" value="38"><span class="val" data-out="prevOpacity">38%</span></div></div>
-        <div class="style-block"><h4>현재 가사</h4><div class="color-control"><input type="color" id="currentStateColor" value="#8a52ff"><span class="lbl">강조색</span></div><div class="range-line" style="grid-template-columns:72px 1fr 34px"><span class="lbl">투명도</span><input type="range" id="currentOpacity" min="0" max="100" value="100"><span class="val" data-out="currentOpacity">100%</span></div></div>
-        <div class="style-block"><h4>다음 가사</h4><div class="color-control"><input type="color" id="nextStateColor" value="#ffffff"><span class="lbl">강조색</span></div><div class="range-line" style="grid-template-columns:72px 1fr 34px"><span class="lbl">투명도</span><input type="range" id="nextOpacity" min="0" max="100" value="38"><span class="val" data-out="nextOpacity">38%</span></div></div>
+        <div class="style-block"><h4>이전 가사</h4><div class="color-control"><input type="color" id="prevStateColor" value="#ffffff"><span class="lbl">글자색</span></div><div class="range-line" style="grid-template-columns:72px 1fr 34px"><span class="lbl">투명도</span><input type="range" id="prevOpacity" min="0" max="100" value="38"><span class="val" data-out="prevOpacity">38%</span></div></div>
+        <div class="style-block"><h4>현재 가사</h4><div class="color-control"><input type="color" id="currentStateColor" value="#8a52ff"><span class="lbl">글자색</span></div><div class="range-line" style="grid-template-columns:72px 1fr 34px"><span class="lbl">투명도</span><input type="range" id="currentOpacity" min="0" max="100" value="100"><span class="val" data-out="currentOpacity">100%</span></div></div>
+        <div class="style-block"><h4>다음 가사</h4><div class="color-control"><input type="color" id="nextStateColor" value="#ffffff"><span class="lbl">글자색</span></div><div class="range-line" style="grid-template-columns:72px 1fr 34px"><span class="lbl">투명도</span><input type="range" id="nextOpacity" min="0" max="100" value="38"><span class="val" data-out="nextOpacity">38%</span></div></div>
       </div>
-      <div class="toggle-row" style="margin-top:9px"><button class="chip" id="overrideStateText">상태색으로 텍스트 덮어쓰기</button></div>
+      <div class="toggle-row" style="margin-top:9px"><button class="chip" id="overrideStateText">상태별 글자색 사용</button></div><div class="helper" style="margin-top:6px">1·2·3행 고유 색을 유지하려면 이 버튼을 끄세요. 위의 이전/현재/다음 글자색을 직접 고르면 자동으로 상태별 글자색 모드가 켜집니다.</div>
     </div>
 
     <div class="card">
@@ -169,7 +169,7 @@ dialog{border:none;border-radius:14px;padding:0;max-width:min(760px,92vw);width:
     <div class="card">
       <h3>애니메이션</h3>
       <div class="two-col">
-        <div class="field"><label class="lbl">전환 효과</label><select id="animationType"><option value="stack" selected>아래에서 밀고 올라가기 · 스택</option><option value="fadeRise">페이드 + 미세 상승</option><option value="slide">옆에서 슬라이드</option><option value="pop">팝업</option><option value="blur">블러 인</option><option value="reveal">마스크 리빌</option><option value="none">즉시 전환</option></select></div>
+        <div class="field"><label class="lbl">전환 효과</label><select id="animationType"><option value="stack" selected>아래 가사가 전체를 밀어올리기 · 스택</option><option value="fadeRise">페이드 + 미세 상승</option><option value="slide">옆에서 슬라이드</option><option value="pop">팝업</option><option value="blur">블러 인</option><option value="reveal">마스크 리빌</option><option value="none">즉시 전환</option></select></div>
         <div class="field"><label class="lbl">슬라이드 방향</label><select id="slideDirection"><option value="right">오른쪽 → 안쪽</option><option value="left">왼쪽 → 안쪽</option></select></div>
       </div>
       <div class="range-line"><span class="lbl">전환 시간</span><input type="range" id="animationDuration" min="10" max="120" value="45"><span class="val" data-out="animationDuration">0.45s</span></div>
@@ -244,9 +244,9 @@ let settings={
   boxMode:'segments',panelColor:'#0b0b12',panelOpacity:55,boxRadius:26,boxPadding:28,segmentGap:12,boxX:8,boxY:13,boxWidth:84,boxHeight:74,prevBoxColor:'#1b1b24',currentBoxColor:'#8a52ff',nextBoxColor:'#1b1b24',prevBoxOpacity:36,currentBoxOpacity:76,nextBoxOpacity:36,
   animationType:'stack',slideDirection:'right',animationDuration:.45,animationDistance:56,outputBg:'transparent',solidBgColor:'#000000',
   lineStyles:[
-    {color:'#ffffff',size:58,weight:850,font:'sans',spacing:0,opacity:100},
-    {color:'#d8d8e5',size:34,weight:650,font:'sans',spacing:0,opacity:92},
-    {color:'#ffd974',size:36,weight:700,font:'sans',spacing:0,opacity:96}
+    {color:'#ffffff',size:58,weight:850,font:'sans',spacing:0,opacity:100,shadow:true,shadowColor:'#000000',shadowBlur:12,shadowX:0,shadowY:4,glow:false,glowColor:'#8a52ff',glowBlur:20,glowOpacity:70},
+    {color:'#d8d8e5',size:34,weight:650,font:'sans',spacing:0,opacity:92,shadow:true,shadowColor:'#000000',shadowBlur:9,shadowX:0,shadowY:3,glow:false,glowColor:'#8a52ff',glowBlur:16,glowOpacity:60},
+    {color:'#ffd974',size:36,weight:700,font:'sans',spacing:0,opacity:96,shadow:true,shadowColor:'#000000',shadowBlur:9,shadowX:0,shadowY:3,glow:false,glowColor:'#ffd974',glowBlur:16,glowOpacity:60}
   ]
 };
 const LAYOUTS={right:{w:640,h:1080,label:'우측 세로 640×1080'},bottom:{w:1920,h:360,label:'하단 가로 1920×360'},center:{w:1400,h:520,label:'중앙 가로 1400×520'},full:{w:1920,h:1080,label:'전체 16:9 1920×1080'}};
@@ -265,16 +265,59 @@ function sortedCues(){return cues.slice().sort((a,b)=>(Number.isFinite(a.start)?
 function activeIndexAt(t){const arr=cues;let idx=-1;for(let i=0;i<arr.length;i++){const c=arr[i];if(!Number.isFinite(c.start))continue;if(c.start<=t+.005){const e=safeEnd(c,i);idx=(t<=e+.01)?i:-1}else break}return idx}
 function selectedIndex(){return cues.findIndex(c=>c.id===selectedCueId)}
 function activeCue(){const i=activeIndexAt(audio.currentTime||0);return i>=0?cues[i]:null}
-function fontStack(name){if(name==='serif')return '"Noto Serif KR","Batang",serif';if(name==='mono')return '"D2Coding","Consolas",monospace';if(name==='rounded')return '"Arial Rounded MT Bold","Pretendard",sans-serif';return '"Pretendard","Noto Sans KR","Apple SD Gothic Neo",sans-serif'}
+function fontStack(name){
+  if(name==='pretendard')return '"Pretendard","Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif';
+  if(name==='malgun')return '"Malgun Gothic","맑은 고딕","Noto Sans KR",sans-serif';
+  if(name==='apple')return '"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif';
+  if(name==='dotum')return '"Dotum","돋움","Malgun Gothic",sans-serif';
+  if(name==='serif')return '"Noto Serif KR","Batang","바탕",serif';
+  if(name==='batang')return '"Batang","바탕","Noto Serif KR",serif';
+  if(name==='gungsuh')return '"Gungsuh","궁서","Batang",serif';
+  if(name==='mono')return '"D2Coding","Consolas","NanumGothicCoding",monospace';
+  if(name==='rounded')return '"Arial Rounded MT Bold","NanumSquareRound","Pretendard",sans-serif';
+  if(name==='display')return '"Impact","Arial Black","Pretendard","Malgun Gothic",sans-serif';
+  if(name==='condensed')return '"Arial Narrow","Roboto Condensed","Pretendard",sans-serif';
+  return '"Pretendard","Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif'
+}
 function setCanvasLayout(key,applyDefaults=true){layout=LAYOUTS[key]?key:'right';const p=LAYOUTS[layout];canvas.width=p.w;canvas.height=p.h;W=p.w;H=p.h;if(applyDefaults){const d={right:{slotGap:210,contentWidth:82,anchorY:50,anchorX:12,boxX:8,boxY:13,boxWidth:84,boxHeight:74},bottom:{slotGap:100,contentWidth:82,anchorY:50,anchorX:8,boxX:6,boxY:14,boxWidth:88,boxHeight:72},center:{slotGap:128,contentWidth:84,anchorY:50,anchorX:10,boxX:8,boxY:12,boxWidth:84,boxHeight:76},full:{slotGap:180,contentWidth:70,anchorY:52,anchorX:12,boxX:12,boxY:18,boxWidth:76,boxHeight:60}}[layout];Object.assign(settings,d);['slotGap','contentWidth','anchorY','anchorX','boxX','boxY','boxWidth','boxHeight'].forEach(id=>{if($(id))$(id).value=settings[id]});updateRangeOutputs()}document.querySelectorAll('[data-layout]').forEach(b=>b.classList.toggle('on',b.dataset.layout===layout));updateCanvasMeta();drawFrame()}
 function updateCanvasMeta(){$('canvasMeta').textContent=`${W} × ${H} · ${settings.outputBg==='transparent'?'투명':settings.outputBg==='chromaGreen'?'크로마키 초록':settings.outputBg==='chromaBlue'?'크로마키 파랑':'단색'}`}
 function drawBackground(){ctx.clearRect(0,0,W,H);if(settings.outputBg==='chromaGreen'){ctx.fillStyle='#00ff00';ctx.fillRect(0,0,W,H)}else if(settings.outputBg==='chromaBlue'){ctx.fillStyle='#0000ff';ctx.fillRect(0,0,W,H)}else if(settings.outputBg==='solid'){ctx.fillStyle=settings.solidBgColor;ctx.fillRect(0,0,W,H)}}
 function roundRect(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath()}
 function measureSpaced(text,spacing){const ch=Array.from(text||'');return ch.reduce((s,c)=>s+ctx.measureText(c).width,0)+Math.max(0,ch.length-1)*spacing}
 function drawSpaced(text,x,y,spacing,align){const chars=Array.from(text||'');const widths=chars.map(c=>ctx.measureText(c).width);const total=widths.reduce((a,b)=>a+b,0)+Math.max(0,chars.length-1)*spacing;let sx=align==='center'?x-total/2:align==='right'?x-total:x;ctx.textAlign='left';for(let i=0;i<chars.length;i++){ctx.fillText(chars[i],sx,y);sx+=widths[i]+spacing}return total}
+function drawStyledSpaced(text,x,y,spacing,align,st,fillColor){
+  const shadowOn=st.shadow!==false, glowOn=!!st.glow;
+  if(glowOn){
+    ctx.save();
+    ctx.fillStyle=st.glowColor||fillColor;
+    ctx.shadowColor=rgba(st.glowColor||fillColor,(st.glowOpacity??70)/100);
+    ctx.shadowBlur=Math.max(0,+st.glowBlur||0);
+    ctx.shadowOffsetX=0;ctx.shadowOffsetY=0;
+    drawSpaced(text,x,y,spacing,align);
+    ctx.restore();
+  }
+  ctx.save();
+  ctx.fillStyle=fillColor;
+  if(shadowOn){
+    ctx.shadowColor=st.shadowColor||'#000000';
+    ctx.shadowBlur=Math.max(0,+st.shadowBlur||0);
+    ctx.shadowOffsetX=+st.shadowX||0;
+    ctx.shadowOffsetY=+st.shadowY||0;
+  }else{
+    ctx.shadowColor='rgba(0,0,0,0)';ctx.shadowBlur=0;ctx.shadowOffsetX=0;ctx.shadowOffsetY=0;
+  }
+  drawSpaced(text,x,y,spacing,align);
+  ctx.restore();
+}
 function lineMetrics(cue){const roles=normalizeLines(cue?.lines);const scale=1;let h=0,maxW=0;const rows=[];roles.forEach((text,i)=>{if(!text)return;const st=settings.lineStyles[i]||settings.lineStyles[0];const px=Math.max(12,st.size*scale);ctx.font=`${st.weight} ${px}px ${fontStack(st.font)}`;const spacing=st.spacing*scale;const w=measureSpaced(text,spacing);const lh=px*1.16;rows.push({text,i,st,px,spacing,w,lh});h+=lh;if(rows.length>1)h+=Math.max(5,px*.10);maxW=Math.max(maxW,w)});return {rows,height:h,width:maxW}}
-function stateStyle(kind){if(kind==='prev')return {opacity:settings.prevOpacity/100,color:settings.prevStateColor,box:settings.prevBoxColor,boxOpacity:settings.prevBoxOpacity/100};if(kind==='next')return {opacity:settings.nextOpacity/100,color:settings.nextStateColor,box:settings.nextBoxColor,boxOpacity:settings.nextBoxOpacity/100};return {opacity:settings.currentOpacity/100,color:settings.currentStateColor,box:settings.currentBoxColor,boxOpacity:settings.currentBoxOpacity/100}}
-function isBoxCanvasMode(){return ['segments','panel','current'].includes(settings.boxMode)}
+function stateStyle(kind){
+  if(kind==='prev2')return {opacity:(settings.prevOpacity/100)*0.72,color:settings.prevStateColor,box:settings.prevBoxColor,boxOpacity:(settings.prevBoxOpacity/100)*0.78};
+  if(kind==='prev')return {opacity:settings.prevOpacity/100,color:settings.prevStateColor,box:settings.prevBoxColor,boxOpacity:settings.prevBoxOpacity/100};
+  if(kind==='next')return {opacity:settings.nextOpacity/100,color:settings.nextStateColor,box:settings.nextBoxColor,boxOpacity:settings.nextBoxOpacity/100};
+  if(kind==='next2')return {opacity:(settings.nextOpacity/100)*0.72,color:settings.nextStateColor,box:settings.nextBoxColor,boxOpacity:(settings.nextBoxOpacity/100)*0.78};
+  return {opacity:settings.currentOpacity/100,color:settings.currentStateColor,box:settings.currentBoxColor,boxOpacity:settings.currentBoxOpacity/100}
+}
+function isBoxCanvasMode(){return ['none','segments','panel','current'].includes(settings.boxMode)}
 function getBoxRectPx(){return {x:W*settings.boxX/100,y:H*settings.boxY/100,w:W*settings.boxWidth/100,h:H*settings.boxHeight/100}}
 function syncBoxControls(){['boxX','boxY','boxWidth','boxHeight'].forEach(id=>{if($(id))$(id).value=settings[id]});updateRangeOutputs()}
 function transitionExtra(kind,p,e){const ex={opacity:1,scale:1,blur:0,reveal:null};if(kind!=='current'||p>=1)return ex;const d=settings.animationDistance;if(settings.animationType==='fadeRise'){ex.opacity=e;ex.dy=(1-e)*d}else if(settings.animationType==='slide'){ex.opacity=e;ex.dx=(1-e)*d*(settings.slideDirection==='left'?-1:1)}else if(settings.animationType==='pop'){ex.opacity=e;ex.scale=.88+.12*e+Math.sin(e*Math.PI)*.05}else if(settings.animationType==='blur'){ex.opacity=e;ex.blur=(1-e)*8}else if(settings.animationType==='reveal'){ex.reveal=e}else if(settings.animationType==='none'){ex.opacity=1}return ex}
@@ -282,10 +325,63 @@ function drawCueBlock(cue,x,y,kind,extra={}){if(!cue)return;const state=stateSty
   let showBox=extra.drawLocalBox ?? (settings.boxMode==='rows'||(settings.boxMode==='current'&&kind==='current'&&!extra.rect));
   if(showBox){ctx.save();ctx.fillStyle=rgba(state.box,state.boxOpacity*a);roundRect(bx,by,boxW,boxH,settings.boxRadius*scale);ctx.fill();ctx.restore()}
   ctx.save();if(extra.reveal!=null){ctx.beginPath();ctx.rect(bx,by,boxW*extra.reveal,boxH);ctx.clip()}ctx.globalAlpha=a; if(extra.scale){ctx.translate(x,y);ctx.scale(extra.scale,extra.scale);ctx.translate(-x,-y)} if(extra.blur){ctx.filter=`blur(${extra.blur}px)`}
-  const align=extra.textAlign||settings.textAlign;let ty=by+boxH/2-m.height/2+(extra.dy||0);for(const row of m.rows){const st=row.st;ty+=row.lh/2;ctx.font=`${st.weight} ${row.px}px ${fontStack(st.font)}`;ctx.textBaseline='middle';ctx.fillStyle=settings.overrideStateText?state.color:st.color;ctx.globalAlpha=a*(st.opacity/100);ctx.shadowColor='rgba(0,0,0,.55)';ctx.shadowBlur=Math.max(2,row.px*.10);let tx=bx+boxW/2+(extra.dx||0);if(align==='left')tx=bx+pad+(extra.dx||0);if(align==='right')tx=bx+boxW-pad+(extra.dx||0);drawSpaced(row.text,tx,ty,row.spacing,align);ty+=row.lh/2+Math.max(5,row.px*.10)}ctx.restore();
+  const align=extra.textAlign||settings.textAlign;let ty=by+boxH/2-m.height/2+(extra.dy||0);for(const row of m.rows){const st=row.st;ty+=row.lh/2;ctx.font=`${st.weight} ${row.px}px ${fontStack(st.font)}`;ctx.textBaseline='middle';ctx.globalAlpha=a*(st.opacity/100);let tx=bx+boxW/2+(extra.dx||0);if(align==='left')tx=bx+pad+(extra.dx||0);if(align==='right')tx=bx+boxW-pad+(extra.dx||0);const fillColor=settings.overrideStateText?state.color:st.color;drawStyledSpaced(row.text,tx,ty,row.spacing,align,st,fillColor);ty+=row.lh/2+Math.max(5,row.px*.10)}ctx.restore();
 }
 function drawPanel(){if(settings.boxMode!=='panel')return;const r=getBoxRectPx();ctx.save();ctx.fillStyle=rgba(settings.panelColor,settings.panelOpacity/100);roundRect(r.x,r.y,r.w,r.h,settings.boxRadius);ctx.fill();ctx.restore()}
-function drawBoxLayoutAtTime(i,p,e){const outer=getBoxRectPx();const currentKinds=settings.boxMode==='current'?['current']:visibleKinds();ctx.save();ctx.fillStyle=rgba(settings.panelColor,settings.panelOpacity/100);roundRect(outer.x,outer.y,outer.w,outer.h,settings.boxRadius);ctx.fill();ctx.restore();const inset=Math.max(8,settings.boxPadding*.55),gap=settings.segmentGap,inner={x:outer.x+inset,y:outer.y+inset,w:outer.w-inset*2,h:outer.h-inset*2};const totalGap=gap*Math.max(0,currentKinds.length-1),slotH=(inner.h-totalGap)/Math.max(1,currentKinds.length);currentKinds.forEach((kind,idx)=>{const state=stateStyle(kind),slot={x:inner.x,y:inner.y+idx*(slotH+gap),w:inner.w,h:slotH};if(settings.boxMode==='segments' || (settings.boxMode==='current'&&kind==='current')){ctx.save();ctx.fillStyle=rgba(state.box,kind==='current'?state.boxOpacity:Math.max(.16,state.boxOpacity));roundRect(slot.x,slot.y,slot.w,slot.h,Math.max(10,settings.boxRadius*.72));ctx.fill();ctx.restore()}if(settings.boxMode==='segments' && idx<currentKinds.length-1){ctx.save();ctx.strokeStyle='rgba(255,255,255,.08)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(slot.x+10,slot.y+slot.h+gap/2);ctx.lineTo(slot.x+slot.w-10,slot.y+slot.h+gap/2);ctx.stroke();ctx.restore()}const j=kind==='prev'?i-1:kind==='next'?i+1:i;if(j<0||j>=cues.length)return;const ex=transitionExtra(kind,p,e);drawCueBlock(cues[j],slot.x+slot.w/2,slot.y+slot.h/2,kind,{rect:slot,drawLocalBox:false,...ex})})}
+function boxKinds(){return settings.boxMode==='current'?['current']:visibleKinds()}
+function kindOffset(kind){if(kind==='prev2')return -2;if(kind==='prev')return -1;if(kind==='next')return 1;if(kind==='next2')return 2;return 0}
+function drawBoxLayoutAtTime(i,p,e){
+  const outer=getBoxRectPx(),currentKinds=boxKinds();
+  // '없음 · 완전 투명'은 박스/배경만 숨기고, 같은 자유 크기 영역 안에서 가사를 배치한다.
+  if(settings.boxMode!=='none'){
+    ctx.save();ctx.fillStyle=rgba(settings.panelColor,settings.panelOpacity/100);roundRect(outer.x,outer.y,outer.w,outer.h,settings.boxRadius);ctx.fill();ctx.restore();
+  }
+  const inset=Math.max(8,settings.boxPadding*.55),gap=settings.segmentGap;
+  const inner={x:outer.x+inset,y:outer.y+inset,w:Math.max(20,outer.w-inset*2),h:Math.max(20,outer.h-inset*2)};
+  const totalGap=gap*Math.max(0,currentKinds.length-1),slotH=Math.max(20,(inner.h-totalGap)/Math.max(1,currentKinds.length));
+  const slots=currentKinds.map((kind,idx)=>({kind,x:inner.x,y:inner.y+idx*(slotH+gap),w:inner.w,h:slotH}));
+
+  // 배경/하이라이트는 고정된 섹션. 텍스트만 아래에서 위로 밀려 올라가며 자리를 교체한다.
+  slots.forEach((slot,idx)=>{
+    const state=stateStyle(slot.kind);
+    if(settings.boxMode==='segments'||(settings.boxMode==='current'&&slot.kind==='current')){
+      ctx.save();ctx.fillStyle=rgba(state.box,state.boxOpacity);roundRect(slot.x,slot.y,slot.w,slot.h,Math.max(10,settings.boxRadius*.72));ctx.fill();ctx.restore();
+    }
+    if(settings.boxMode==='segments'&&idx<slots.length-1){
+      ctx.save();ctx.strokeStyle='rgba(255,255,255,.08)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(slot.x+10,slot.y+slot.h+gap/2);ctx.lineTo(slot.x+slot.w-10,slot.y+slot.h+gap/2);ctx.stroke();ctx.restore();
+    }
+  });
+
+  // 박스 바깥으로 이동 중인 가사가 보이지 않도록 내부 영역만 클립.
+  ctx.save();roundRect(outer.x,outer.y,outer.w,outer.h,Math.max(0,settings.boxRadius));ctx.clip();
+
+  if(settings.animationType==='stack'){
+    const firstTarget=i+kindOffset(currentKinds[0]);
+    const lastTarget=i+kindOffset(currentKinds[currentKinds.length-1]);
+    const step=slotH+gap;
+    const firstCenter=slots[0].y+slots[0].h/2;
+    // 시작 장면은 한 칸 전 상태, 종료 장면은 현재 상태.
+    // 예: [이전,현재,다음] = [i-2,i-1,i] → [i-1,i,i+1]
+    for(let j=firstTarget-1;j<=lastTarget;j++){
+      if(j<0||j>=cues.length)continue;
+      const visualIndex=(j-firstTarget)+(1-e);
+      const y=firstCenter+visualIndex*step;
+      // 화면상 어느 섹션을 지나고 있는지에 따라 이전/현재/다음 상태색·투명도를 적용.
+      const nearest=Math.round(visualIndex);
+      let kind=currentKinds[clamp(nearest,0,currentKinds.length-1)];
+      const edgeFade=visualIndex<-.15?clamp(1+(visualIndex+.15)*1.5,0,1):visualIndex>currentKinds.length-1+.15?clamp(1-(visualIndex-(currentKinds.length-1+.15))*1.5,0,1):1;
+      const rect={x:inner.x,y:y-slotH/2,w:inner.w,h:slotH};
+      drawCueBlock(cues[j],rect.x+rect.w/2,y,kind,{rect,drawLocalBox:false,opacity:edgeFade});
+    }
+  }else{
+    slots.forEach(slot=>{
+      const j=i+kindOffset(slot.kind);if(j<0||j>=cues.length)return;
+      const ex=transitionExtra(slot.kind,p,e);
+      drawCueBlock(cues[j],slot.x+slot.w/2,slot.y+slot.h/2,slot.kind,{rect:slot,drawLocalBox:false,...ex});
+    });
+  }
+  ctx.restore();
+}
 function drawCanvasBoxGuide(){if(recording||!isBoxCanvasMode())return;const r=getBoxRectPx(),hs=10;ctx.save();ctx.strokeStyle='rgba(255,255,255,.92)';ctx.lineWidth=2;ctx.setLineDash([8,6]);roundRect(r.x,r.y,r.w,r.h,Math.max(8,settings.boxRadius*.55));ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='rgba(138,82,255,.95)';[['nw',r.x,r.y],['ne',r.x+r.w,r.y],['sw',r.x,r.y+r.h],['se',r.x+r.w,r.y+r.h]].forEach(([k,x,y])=>{ctx.fillRect(x-hs/2,y-hs/2,hs,hs)});ctx.fillStyle='rgba(255,255,255,.92)';ctx.font='700 14px "Pretendard","Noto Sans KR",sans-serif';ctx.fillText('드래그: 위치 이동 · 모서리: 크기 조절',r.x+12,Math.max(18,r.y-10));ctx.restore()}
 function canvasPoint(ev){const rect=canvas.getBoundingClientRect();return {x:(ev.clientX-rect.left)*(W/rect.width),y:(ev.clientY-rect.top)*(H/rect.height)}}
 let boxDrag=null;
@@ -297,10 +393,48 @@ function onCanvasPointerMove(ev){if(!boxDrag){updateCanvasCursor(ev);return}cons
 function onCanvasPointerUp(ev){if(!boxDrag)return;boxDrag=null;canvas.releasePointerCapture?.(ev.pointerId);canvas.style.cursor='default'}
 function easeOutCubic(t){return 1-Math.pow(1-t,3)}
 function transitionProgress(index,t){if(index<0)return 1;const c=cues[index];if(!Number.isFinite(c.start))return 1;return clamp((t-c.start)/Math.max(.08,settings.animationDuration),0,1)}
-function visibleKinds(){if(settings.displayMode==='current')return ['current'];if(settings.displayMode==='prevcurrent')return ['prev','current'];if(settings.displayMode==='currentnext')return ['current','next'];return ['prev','current','next']}
-function drawLyricsAtTime(t){if(!cues.length)return;let i=activeIndexAt(t);if(i<0){if(!playing&&selectedCueId)i=selectedIndex();else return}if(i<0)return;const p=transitionProgress(i,t),e=easeOutCubic(p);if(isBoxCanvasMode()&&settings.boxMode!=='rows'){drawBoxLayoutAtTime(i,p,e);return}const gap=settings.slotGap;const anchorBase=H*settings.anchorY/100;let x;if(settings.textAlign==='left')x=W*settings.anchorX/100;else if(settings.textAlign==='right')x=W*(1-settings.anchorX/100);else x=W/2;const kinds=visibleKinds();
-  if(settings.animationType==='stack'&&kinds.length>1&&i>0){const center=(i-1)+e;for(let j=Math.max(0,i-2);j<=Math.min(cues.length-1,i+1);j++){const rel=j-center;let kind=rel<-.5?'prev':rel>.5?'next':'current';if(!kinds.includes(kind))continue;const y=anchorBase+rel*gap;drawCueBlock(cues[j],x,y,kind,{opacity:1})}return}
-  const positions={prev:anchorBase-gap,current:anchorBase,next:anchorBase+gap};for(const kind of kinds){const j=kind==='prev'?i-1:kind==='next'?i+1:i;if(j<0||j>=cues.length)continue;const ex=transitionExtra(kind,p,e);drawCueBlock(cues[j],x+(ex.dx||0),positions[kind]+(ex.dy||0),kind,ex)}
+function visibleKinds(){
+  if(settings.displayMode==='current')return ['current'];
+  if(settings.displayMode==='prevcurrent')return ['prev','current'];
+  if(settings.displayMode==='currentnext')return ['current','next'];
+  if(settings.displayMode==='stack5')return ['prev2','prev','current','next','next2'];
+  return ['prev','current','next']
+}
+function drawLyricsAtTime(t){
+  if(!cues.length)return;
+  let i=activeIndexAt(t);
+  if(i<0){if(!playing&&selectedCueId)i=selectedIndex();else return}
+  if(i<0)return;
+  const p=(!playing&&!recording)?1:transitionProgress(i,t),e=easeOutCubic(p);
+  if(isBoxCanvasMode()&&settings.boxMode!=='rows'){drawBoxLayoutAtTime(i,p,e);return}
+  const gap=settings.slotGap;
+  const anchorBase=H*settings.anchorY/100;
+  let x;if(settings.textAlign==='left')x=W*settings.anchorX/100;else if(settings.textAlign==='right')x=W*(1-settings.anchorX/100);else x=W/2;
+  const kinds=visibleKinds();
+  const slotCenters=kinds.map((_,idx)=>anchorBase + (idx-(kinds.length-1)/2)*gap);
+
+  if(settings.animationType==='stack'&&kinds.length>1){
+    const firstTarget=i+kindOffset(kinds[0]);
+    const lastTarget=i+kindOffset(kinds[kinds.length-1]);
+    const step=gap;
+    const firstCenter=slotCenters[0];
+    for(let j=firstTarget-1;j<=lastTarget;j++){
+      if(j<0||j>=cues.length)continue;
+      const visualIndex=(j-firstTarget)+(1-e);
+      const y=firstCenter+visualIndex*step;
+      const nearest=Math.round(visualIndex);
+      let kind=kinds[clamp(nearest,0,kinds.length-1)];
+      const edgeFade=visualIndex<-.15?clamp(1+(visualIndex+.15)*1.5,0,1):visualIndex>kinds.length-1+.15?clamp(1-(visualIndex-(kinds.length-1+.15))*1.5,0,1):1;
+      drawCueBlock(cues[j],x,y,kind,{opacity:edgeFade});
+    }
+    return;
+  }
+
+  kinds.forEach((kind,idx)=>{
+    const j=i+kindOffset(kind); if(j<0||j>=cues.length)return;
+    const ex=transitionExtra(kind,p,e);
+    drawCueBlock(cues[j],x+(ex.dx||0),slotCenters[idx]+(ex.dy||0),kind,ex);
+  })
 }
 function drawFrame(){drawBackground();if(!isBoxCanvasMode())drawPanel();drawLyricsAtTime(audio.currentTime||0);drawCanvasBoxGuide();updateCanvasMeta()}
 function loop(){if(!playing&&!recording)return;drawFrame();updateTransport();rafId=requestAnimationFrame(loop)}
@@ -328,12 +462,83 @@ function openSplit(){const idx=selectedIndex();if(idx<0)return;const c=cues[idx]
 function setSplitTimeMode(mode){splitTimeMode=mode;document.querySelectorAll('[data-split-time]').forEach(x=>x.classList.toggle('on',x.dataset.splitTime===mode));const idx=selectedIndex();if(idx<0)return;const c=cues[idx],end=safeEnd(c,idx);let v=Number($('splitTime').value)||0;if(mode==='current')v=audio.currentTime||((c.start||0)+end)/2;if(mode==='middle')v=((c.start||0)+end)/2;$('splitTime').value=clamp(v,(c.start||0)+.02,end-.02).toFixed(2);$('splitTime').disabled=mode!=='custom'}
 function applySplit(){const idx=selectedIndex();if(idx<0)return;const c=cues[idx],end=safeEnd(c,idx),sp=clamp(Number($('splitTime').value),(c.start||0)+.02,end-.02);const front=[...document.querySelectorAll('.split-front-line')].map(x=>x.value.trim()),back=[...document.querySelectorAll('.split-back-line')].map(x=>x.value.trim());if(!front.some(Boolean)||!back.some(Boolean)){alert('앞/뒤 가사에 각각 한 줄 이상 내용을 넣어주세요.');return}const oldEnd=end;c.lines=normalizeLines(front);c.originalLines=normalizeLines(front);c.end=sp;const n={id:uid(),start:sp,end:oldEnd,lines:normalizeLines(back),originalLines:normalizeLines(back)};cues.splice(idx+1,0,n);$('splitDialog').close();selectedCueId=n.id;renderEditor();renderCueList();updateStampLabel();setStatus(`가사 묶음을 <b>${fmt(sp)}</b>에서 두 큐로 나눴어요. 뒤의 기존 타이밍은 그대로 유지됩니다.`);drawFrame()}
 function mergeNext(){const idx=selectedIndex();if(idx<0||idx>=cues.length-1)return;const a=cues[idx],b=cues[idx+1];if(!window.confirm(`#${idx+1}과 #${idx+2}를 합칠까요? 가운데 타이밍만 제거됩니다.`))return;a.lines=normalizeLines(a.lines.map((x,i)=>[x,b.lines[i]].filter(Boolean).join(' ')));a.end=safeEnd(b,idx+1);a.originalLines=normalizeLines(a.originalLines.map((x,i)=>[x,b.originalLines?.[i]].filter(Boolean).join(' ')));cues.splice(idx+1,1);renderEditor();renderCueList();updateStampLabel();setStatus('두 가사를 합쳤어요. 앞 시작/뒤 종료 타이밍은 유지됩니다.');drawFrame()}
-function renderLineStylePanels(){const names=roleNames();$('lineStylePanels').innerHTML=settings.lineStyles.map((s,i)=>`<div class="style-panel ${i===0?'active':''}" data-style-panel="${i}" style="${i>=modeCount()?'display:none':''}"><div class="style-grid"><div class="style-block"><h4>${i+1}행 · ${esc(names[i]||'미사용')}</h4><div class="color-row"><div class="field"><label class="lbl">텍스트 색</label><input type="color" class="ls-color" data-i="${i}" value="${s.color}"></div><div class="field"><label class="lbl">폰트</label><select class="ls-font" data-i="${i}"><option value="sans" ${s.font==='sans'?'selected':''}>고딕</option><option value="serif" ${s.font==='serif'?'selected':''}>명조</option><option value="mono" ${s.font==='mono'?'selected':''}>모노</option><option value="rounded" ${s.font==='rounded'?'selected':''}>둥근</option></select></div></div><div class="range-line"><span class="lbl">크기</span><input type="range" class="ls-size" data-i="${i}" min="18" max="110" value="${s.size}"><span class="val">${s.size}</span></div><div class="range-line"><span class="lbl">굵기</span><input type="range" class="ls-weight" data-i="${i}" min="300" max="900" step="50" value="${s.weight}"><span class="val">${s.weight}</span></div><div class="range-line"><span class="lbl">자간</span><input type="range" class="ls-spacing" data-i="${i}" min="-6" max="24" value="${s.spacing}"><span class="val">${s.spacing}</span></div><div class="range-line"><span class="lbl">불투명</span><input type="range" class="ls-opacity" data-i="${i}" min="10" max="100" value="${s.opacity}"><span class="val">${s.opacity}%</span></div></div></div></div>`).join('');bindLineStyleInputs();document.querySelectorAll('[data-style-tab]').forEach(t=>t.classList.toggle('on',t.dataset.styleTab==='0'))}
-function bindLineStyleInputs(){document.querySelectorAll('.ls-color,.ls-font,.ls-size,.ls-weight,.ls-spacing,.ls-opacity').forEach(el=>el.addEventListener('input',()=>{const i=+el.dataset.i,s=settings.lineStyles[i];if(el.classList.contains('ls-color'))s.color=el.value;if(el.classList.contains('ls-font'))s.font=el.value;if(el.classList.contains('ls-size'))s.size=+el.value;if(el.classList.contains('ls-weight'))s.weight=+el.value;if(el.classList.contains('ls-spacing'))s.spacing=+el.value;if(el.classList.contains('ls-opacity'))s.opacity=+el.value;const v=el.parentElement.querySelector('.val')||el.closest('.range-line')?.querySelector('.val');if(v)v.textContent=el.classList.contains('ls-opacity')?`${el.value}%`:el.value;drawFrame()}))}
-function applyStylePreset(name){if(name==='bigOriginal')settings.lineStyles=[{color:'#ffffff',size:64,weight:900,font:'sans',spacing:0,opacity:100},{color:'#d7d7e2',size:32,weight:650,font:'sans',spacing:0,opacity:92},{color:'#ffd66b',size:34,weight:700,font:'sans',spacing:0,opacity:96}];else if(name==='balanced')settings.lineStyles=[{color:'#ffffff',size:46,weight:800,font:'sans',spacing:0,opacity:100},{color:'#ffffff',size:40,weight:700,font:'sans',spacing:0,opacity:96},{color:'#ffffff',size:40,weight:700,font:'sans',spacing:0,opacity:96}];else settings.lineStyles=[{color:'#fff8ff',size:56,weight:850,font:'serif',spacing:1,opacity:100},{color:'#c9c4d8',size:28,weight:550,font:'sans',spacing:1,opacity:82},{color:'#f3d79b',size:34,weight:650,font:'sans',spacing:0,opacity:94}];renderLineStylePanels();drawFrame()}
+function renderLineStylePanels(){
+  const names=roleNames();
+  $('lineStylePanels').innerHTML=settings.lineStyles.map((s,i)=>`<div class="style-panel ${i===0?'active':''}" data-style-panel="${i}" style="${i>=modeCount()?'display:none':''}">
+    <div class="style-grid"><div class="style-block">
+      <h4>${i+1}행 · ${esc(names[i]||'미사용')}</h4>
+      <div class="color-row">
+        <div class="field"><label class="lbl">텍스트 색</label><input type="color" class="ls-color" data-i="${i}" value="${s.color}"></div>
+        <div class="field"><label class="lbl">폰트</label><select class="ls-font" data-i="${i}">
+          <option value="sans" ${s.font==='sans'?'selected':''}>고딕 기본</option><option value="pretendard" ${s.font==='pretendard'?'selected':''}>Pretendard</option><option value="malgun" ${s.font==='malgun'?'selected':''}>맑은 고딕</option><option value="apple" ${s.font==='apple'?'selected':''}>Apple 산돌고딕</option><option value="dotum" ${s.font==='dotum'?'selected':''}>돋움</option><option value="serif" ${s.font==='serif'?'selected':''}>명조 기본</option><option value="batang" ${s.font==='batang'?'selected':''}>바탕</option><option value="gungsuh" ${s.font==='gungsuh'?'selected':''}>궁서</option><option value="mono" ${s.font==='mono'?'selected':''}>모노</option><option value="rounded" ${s.font==='rounded'?'selected':''}>둥근 고딕</option><option value="display" ${s.font==='display'?'selected':''}>굵은 타이틀</option><option value="condensed" ${s.font==='condensed'?'selected':''}>좁은 타이틀</option>
+        </select></div>
+      </div>
+      <div class="range-line"><span class="lbl">크기</span><input type="range" class="ls-size" data-i="${i}" min="18" max="110" value="${s.size}"><span class="val">${s.size}</span></div>
+      <div class="range-line"><span class="lbl">굵기</span><input type="range" class="ls-weight" data-i="${i}" min="300" max="900" step="50" value="${s.weight}"><span class="val">${s.weight}</span></div>
+      <div class="range-line"><span class="lbl">자간</span><input type="range" class="ls-spacing" data-i="${i}" min="-6" max="24" value="${s.spacing}"><span class="val">${s.spacing}</span></div>
+      <div class="range-line"><span class="lbl">불투명</span><input type="range" class="ls-opacity" data-i="${i}" min="10" max="100" value="${s.opacity}"><span class="val">${s.opacity}%</span></div>
+      <div class="divider"></div>
+      <div class="toggle-row"><button type="button" class="chip ls-shadow-toggle ${s.shadow!==false?'on':''}" data-i="${i}">그림자 ${s.shadow!==false?'ON':'OFF'}</button><button type="button" class="chip ls-glow-toggle ${s.glow?'on':''}" data-i="${i}">글로우 ${s.glow?'ON':'OFF'}</button></div>
+      <div class="two-col" style="margin-top:8px">
+        <div class="style-block"><h4>그림자</h4>
+          <div class="field"><label class="lbl">색상</label><input type="color" class="ls-shadow-color" data-i="${i}" value="${s.shadowColor||'#000000'}"></div>
+          <div class="range-line" style="grid-template-columns:72px 1fr 36px"><span class="lbl">흐림</span><input type="range" class="ls-shadow-blur" data-i="${i}" min="0" max="50" value="${s.shadowBlur??12}"><span class="val">${s.shadowBlur??12}</span></div>
+          <div class="range-line" style="grid-template-columns:72px 1fr 36px"><span class="lbl">X</span><input type="range" class="ls-shadow-x" data-i="${i}" min="-30" max="30" value="${s.shadowX??0}"><span class="val">${s.shadowX??0}</span></div>
+          <div class="range-line" style="grid-template-columns:72px 1fr 36px"><span class="lbl">Y</span><input type="range" class="ls-shadow-y" data-i="${i}" min="-30" max="30" value="${s.shadowY??4}"><span class="val">${s.shadowY??4}</span></div>
+        </div>
+        <div class="style-block"><h4>글로우</h4>
+          <div class="field"><label class="lbl">색상</label><input type="color" class="ls-glow-color" data-i="${i}" value="${s.glowColor||s.color||'#ffffff'}"></div>
+          <div class="range-line" style="grid-template-columns:72px 1fr 36px"><span class="lbl">범위</span><input type="range" class="ls-glow-blur" data-i="${i}" min="0" max="70" value="${s.glowBlur??20}"><span class="val">${s.glowBlur??20}</span></div>
+          <div class="range-line" style="grid-template-columns:72px 1fr 36px"><span class="lbl">강도</span><input type="range" class="ls-glow-opacity" data-i="${i}" min="0" max="100" value="${s.glowOpacity??70}"><span class="val">${s.glowOpacity??70}%</span></div>
+        </div>
+      </div>
+    </div></div>
+  </div>`).join('');
+  bindLineStyleInputs();
+  document.querySelectorAll('[data-style-tab]').forEach(t=>t.classList.toggle('on',t.dataset.styleTab==='0'))
+}
+function bindLineStyleInputs(){
+  document.querySelectorAll('.ls-color,.ls-font,.ls-size,.ls-weight,.ls-spacing,.ls-opacity,.ls-shadow-color,.ls-shadow-blur,.ls-shadow-x,.ls-shadow-y,.ls-glow-color,.ls-glow-blur,.ls-glow-opacity').forEach(el=>el.addEventListener('input',()=>{
+    const i=+el.dataset.i,s=settings.lineStyles[i];
+    if(el.classList.contains('ls-color'))s.color=el.value;
+    if(el.classList.contains('ls-font'))s.font=el.value;
+    if(el.classList.contains('ls-size'))s.size=+el.value;
+    if(el.classList.contains('ls-weight'))s.weight=+el.value;
+    if(el.classList.contains('ls-spacing'))s.spacing=+el.value;
+    if(el.classList.contains('ls-opacity'))s.opacity=+el.value;
+    if(el.classList.contains('ls-shadow-color'))s.shadowColor=el.value;
+    if(el.classList.contains('ls-shadow-blur'))s.shadowBlur=+el.value;
+    if(el.classList.contains('ls-shadow-x'))s.shadowX=+el.value;
+    if(el.classList.contains('ls-shadow-y'))s.shadowY=+el.value;
+    if(el.classList.contains('ls-glow-color'))s.glowColor=el.value;
+    if(el.classList.contains('ls-glow-blur'))s.glowBlur=+el.value;
+    if(el.classList.contains('ls-glow-opacity'))s.glowOpacity=+el.value;
+    const v=el.closest('.range-line')?.querySelector('.val');
+    if(v){if(el.classList.contains('ls-opacity')||el.classList.contains('ls-glow-opacity'))v.textContent=`${el.value}%`;else v.textContent=el.value}
+    drawFrame()
+  }));
+  document.querySelectorAll('.ls-shadow-toggle').forEach(btn=>btn.addEventListener('click',()=>{const s=settings.lineStyles[+btn.dataset.i];s.shadow=!(s.shadow!==false);btn.classList.toggle('on',s.shadow);btn.textContent=`그림자 ${s.shadow?'ON':'OFF'}`;drawFrame()}));
+  document.querySelectorAll('.ls-glow-toggle').forEach(btn=>btn.addEventListener('click',()=>{const s=settings.lineStyles[+btn.dataset.i];s.glow=!s.glow;btn.classList.toggle('on',s.glow);btn.textContent=`글로우 ${s.glow?'ON':'OFF'}`;drawFrame()}));
+}
+function applyStylePreset(name){
+  const fx=(color,shadowBlur=10)=>({shadow:true,shadowColor:'#000000',shadowBlur,shadowX:0,shadowY:3,glow:false,glowColor:color,glowBlur:18,glowOpacity:65});
+  if(name==='bigOriginal')settings.lineStyles=[
+    {color:'#ffffff',size:64,weight:900,font:'sans',spacing:0,opacity:100,...fx('#8a52ff',12)},
+    {color:'#d7d7e2',size:32,weight:650,font:'sans',spacing:0,opacity:92,...fx('#8a52ff',8)},
+    {color:'#ffd66b',size:34,weight:700,font:'sans',spacing:0,opacity:96,...fx('#ffd66b',8)}
+  ];else if(name==='balanced')settings.lineStyles=[
+    {color:'#ffffff',size:46,weight:800,font:'sans',spacing:0,opacity:100,...fx('#ffffff',10)},
+    {color:'#ffffff',size:40,weight:700,font:'sans',spacing:0,opacity:96,...fx('#ffffff',9)},
+    {color:'#ffffff',size:40,weight:700,font:'sans',spacing:0,opacity:96,...fx('#ffffff',9)}
+  ];else settings.lineStyles=[
+    {color:'#fff8ff',size:56,weight:850,font:'serif',spacing:1,opacity:100,...fx('#d9a7ff',12)},
+    {color:'#c9c4d8',size:28,weight:550,font:'sans',spacing:1,opacity:82,...fx('#b7a8dc',8)},
+    {color:'#f3d79b',size:34,weight:650,font:'sans',spacing:0,opacity:94,...fx('#f3d79b',9)}
+  ];renderLineStylePanels();drawFrame()
+}
 function formatSrtTime(s){s=Math.max(0,Number(s)||0);const ms=Math.round(s*1000),msec=ms%1000,tot=Math.floor(ms/1000),sec=tot%60,tm=Math.floor(tot/60),min=tm%60,h=Math.floor(tm/60);return `${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}:${String(sec).padStart(2,'0')},${String(msec).padStart(3,'0')}`}
 function exportSrt(){const valid=cues.filter(c=>Number.isFinite(c.start));if(!valid.length){alert('시간이 찍힌 가사가 없습니다.');return}let text='';valid.forEach((c,i)=>{const idx=cues.indexOf(c),end=safeEnd(c,idx);text+=`${i+1}\r\n${formatSrtTime(c.start)} --> ${formatSrtTime(end)}\r\n${normalizeLines(c.lines).filter(Boolean).join('\r\n')}\r\n\r\n`});downloadBlob(new Blob(['\uFEFF',text],{type:'application/x-subrip;charset=utf-8'}),'가사_편집본.srt')}
-function collectProject(){return {format:'schat-lyrics-maker',version:1,savedAt:new Date().toISOString(),lyricMode,layout,settings,cues,source:originalSourceText}}
+function collectProject(){return {format:'schat-lyrics-maker',version:4,savedAt:new Date().toISOString(),lyricMode,layout,settings,cues,source:originalSourceText}}
 function saveProject(){downloadBlob(new Blob(['\uFEFF',JSON.stringify(collectProject(),null,2)],{type:'application/json;charset=utf-8'}),'스챗_가사프로젝트.schatlyrics.json')}
 async function loadProject(file){try{const data=JSON.parse((await file.text()).replace(/^\uFEFF/,''));if(data.format!=='schat-lyrics-maker')throw new Error('지원하지 않는 프로젝트 파일');lyricMode=['single','double','triple'].includes(data.lyricMode)?data.lyricMode:'double';layout=LAYOUTS[data.layout]?data.layout:'right';settings={...settings,...data.settings,lineStyles:(data.settings?.lineStyles||settings.lineStyles).map((x,i)=>({...settings.lineStyles[i],...x}))};cues=Array.isArray(data.cues)?data.cues.map(c=>({...c,id:c.id||uid(),lines:normalizeLines(c.lines),originalLines:normalizeLines(c.originalLines||c.lines)})):[];originalSourceText=data.source||'';$('lyricsSource').value=originalSourceText;selectedCueId=cues[0]?.id||null;syncControlsFromSettings();setCanvasLayout(layout,false);updateModeUI();renderCueList();renderEditor();setStatus('프로젝트를 복원했어요. 음악 파일만 다시 넣으면 재생/녹화할 수 있어요.')}catch(e){alert('프로젝트를 불러오지 못했습니다: '+e.message)}}
 function syncControlsFromSettings(){const ids=['displayMode','textAlign','contentWidth','slotGap','anchorY','anchorX','prevOpacity','currentOpacity','nextOpacity','prevStateColor','currentStateColor','nextStateColor','boxMode','panelColor','panelOpacity','boxRadius','boxPadding','segmentGap','boxX','boxY','boxWidth','boxHeight','prevBoxColor','currentBoxColor','nextBoxColor','prevBoxOpacity','currentBoxOpacity','nextBoxOpacity','animationType','slideDirection','animationDistance','solidBgColor','outputBg'];ids.forEach(id=>{if($(id)&&settings[id]!==undefined)$(id).value=settings[id]});$('overrideStateText').classList.toggle('on',settings.overrideStateText);if($('animationDuration'))$('animationDuration').value=String(Math.round((settings.animationDuration||.45)*100));updateRangeOutputs()}
@@ -357,6 +562,8 @@ $('cueStart').onchange=()=>updateCueTime('start');$('cueEnd').onchange=()=>updat
 $('closeSplitBtn').onclick=$('cancelSplitBtn').onclick=()=>$('splitDialog').close();document.querySelectorAll('[data-split-time]').forEach(x=>x.onclick=()=>setSplitTimeMode(x.dataset.splitTime));$('applySplitBtn').onclick=applySplit;
 document.querySelectorAll('[data-style-tab]').forEach(t=>t.onclick=()=>{document.querySelectorAll('[data-style-tab]').forEach(x=>x.classList.toggle('on',x===t));document.querySelectorAll('[data-style-panel]').forEach(p=>p.classList.toggle('active',p.dataset.stylePanel===t.dataset.styleTab))});document.querySelectorAll('[data-style-preset]').forEach(b=>b.onclick=()=>applyStylePreset(b.dataset.stylePreset));
 $('overrideStateText').onclick=()=>{settings.overrideStateText=!settings.overrideStateText;$('overrideStateText').classList.toggle('on',settings.overrideStateText);drawFrame()};
+['prevStateColor','currentStateColor','nextStateColor'].forEach(id=>{$(id)?.addEventListener('input',()=>{settings.overrideStateText=true;$('overrideStateText').classList.add('on');settings[id]=$(id).value;drawFrame()})});
+['prevBoxColor','currentBoxColor','nextBoxColor'].forEach(id=>{$(id)?.addEventListener('input',()=>{settings[id]=$(id).value;drawFrame()})});
 ['displayMode','textAlign','contentWidth','slotGap','anchorY','anchorX','prevOpacity','currentOpacity','nextOpacity','prevStateColor','currentStateColor','nextStateColor','boxMode','panelColor','panelOpacity','boxRadius','boxPadding','segmentGap','boxX','boxY','boxWidth','boxHeight','prevBoxColor','currentBoxColor','nextBoxColor','prevBoxOpacity','currentBoxOpacity','nextBoxOpacity','animationType','slideDirection','solidBgColor','outputBg'].forEach(id=>bindSetting(id,'value',v=>['contentWidth','slotGap','anchorY','anchorX','prevOpacity','currentOpacity','nextOpacity','panelOpacity','boxRadius','boxPadding','segmentGap','boxX','boxY','boxWidth','boxHeight','prevBoxOpacity','currentBoxOpacity','nextBoxOpacity'].includes(id)?+v:v));bindSetting('animationDuration','value',v=>+v/100);bindSetting('animationDistance','value',v=>+v);
 $('outputBg').addEventListener('change',updateCanvasMeta);$('recordBtn').onclick=startRecording;$('stopRecordBtn').onclick=stopRecording;$('exportSrtBtn').onclick=exportSrt;$('saveProjectBtn').onclick=saveProject;$('loadProjectBtn').onclick=()=>$('projectInput').click();$('projectInput').onchange=e=>{if(e.target.files[0])loadProject(e.target.files[0]);e.target.value=''};
 
