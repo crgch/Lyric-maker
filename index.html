@@ -568,10 +568,27 @@ function inferExportDuration(){
   return Number.isFinite(last.start)?last.start+Math.max(.8,settings.animationDuration||.45):0;
 }
 function canvasBlob(type='image/png',quality){return new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('캔버스를 이미지로 변환하지 못했습니다.')),type,quality))}
+function effectPaddingPx(){
+  let pad=0;
+  (settings.lineStyles||[]).forEach(st=>{
+    if(!st) return;
+    if(st.shadow!==false){
+      const sb=Math.max(0,+st.shadowBlur||0), sx=Math.abs(+st.shadowX||0), sy=Math.abs(+st.shadowY||0);
+      pad=Math.max(pad, sb + Math.max(sx,sy));
+    }
+    if(st.glow){
+      pad=Math.max(pad, Math.max(0,+st.glowBlur||0));
+    }
+  });
+  pad=Math.max(pad, Math.max(0,+settings.boxPadding||0)*0.25);
+  return Math.ceil(pad + 8);
+}
 function exportRegionRect(){
   if(pngCropToBox){
-    const r=getBoxRectPx();
-    return {x:Math.max(0,Math.floor(r.x)),y:Math.max(0,Math.floor(r.y)),w:Math.max(2,Math.min(W-Math.floor(r.x),Math.round(r.w))),h:Math.max(2,Math.min(H-Math.floor(r.y),Math.round(r.h)))};
+    const r=getBoxRectPx(), pad=effectPaddingPx();
+    const x=Math.max(0,Math.floor(r.x-pad)), y=Math.max(0,Math.floor(r.y-pad));
+    const right=Math.min(W,Math.ceil(r.x+r.w+pad)), bottom=Math.min(H,Math.ceil(r.y+r.h+pad));
+    return {x,y,w:Math.max(2,right-x),h:Math.max(2,bottom-y)};
   }
   return {x:0,y:0,w:W,h:H};
 }
@@ -616,7 +633,7 @@ async function exportPngSequence(){
     const JSZip=await ensureJsZip();
     if(!JSZip)throw new Error('ZIP 모듈을 사용할 수 없습니다.');
     const zip=new JSZip();
-    zip.file('README.txt', 'Premiere Pro 사용법\n1) ZIP 압축 해제\n2) 첫 PNG 파일(예: lyrics_000001.png) 선택\n3) Image Sequence / 이미지 시퀀스 체크 후 가져오기\n4) 필요 시 Interpret Footage에서 프레임레이트를 '+fps+'fps로 확인\n\nExport area: '+(pngCropToBox?'작업 박스 영역':'전체 캔버스')+'\nCanvas: '+W+'x'+H+'\nOutput: '+region.w+'x'+region.h+'\nFrames: '+frameCount+'\nFPS: '+fps+'\nDuration: '+duration.toFixed(3)+'s\n');
+    zip.file('README.txt', 'Premiere Pro 사용법\n1) ZIP 압축 해제\n2) 첫 PNG 파일(예: lyrics_000001.png) 선택\n3) Image Sequence / 이미지 시퀀스 체크 후 가져오기\n4) 필요 시 Interpret Footage에서 프레임레이트를 '+fps+'fps로 확인\n\nExport area: '+(pngCropToBox?'작업 박스 영역(+그림자/글로우 여백)':'전체 캔버스')+'\nCanvas: '+W+'x'+H+'\nOutput: '+region.w+'x'+region.h+'\nFrames: '+frameCount+'\nFPS: '+fps+'\nDuration: '+duration.toFixed(3)+'s\n');
 
     const firstStart=cues.find(c=>Number.isFinite(c.start))?.start ?? 0;
     let transparentBlob=null;
