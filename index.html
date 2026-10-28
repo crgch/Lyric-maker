@@ -188,13 +188,14 @@ dialog{border:none;border-radius:14px;padding:0;max-width:min(760px,92vw);width:
       </div>
       <div class="two-col" style="margin-top:9px"><div class="field"><label class="lbl">프레임</label><select id="recordFps"><option value="30">30 fps</option><option value="60" selected>60 fps</option></select></div><div class="field"><label class="lbl">화질</label><select id="recordBitrate"><option value="12000000">12 Mbps</option><option value="20000000" selected>20 Mbps</option><option value="30000000">30 Mbps</option></select></div></div>
       <div class="record-grid" style="margin-top:10px"><button class="act primary" id="recordBtn" disabled>● 가사 영상 녹화</button><button class="act danger" id="stopRecordBtn" disabled>■ 녹화 종료</button></div>
-      <div class="record-grid" style="margin-top:8px"><button class="act" id="exportPngSeqBtn">⬇ Premiere용 PNG 시퀀스 ZIP</button><button class="act" id="exportGuideBtn">사용법 안내</button></div>
+      <div class="record-grid" style="margin-top:8px"><button class="act" id="exportPngSeqBtn">⬇ Premiere용 PNG 시퀀스</button><button class="act" id="exportGuideBtn">사용법 안내</button></div>
       <div class="toggle-row" style="margin-top:8px"><button class="chip on" id="pngCropToBoxBtn">PNG는 작업 박스 영역만 추출</button></div>
+      <div class="field" style="margin-top:8px"><label class="lbl">PNG 저장 방식</label><select id="pngSaveMode"><option value="folder" selected>폴더에 바로 저장 (Chrome/Edge 권장)</option><option value="zip">ZIP으로 저장 (용량 크면 자동 분할)</option></select></div>
       <div id="pngProgressWrap" style="display:none;margin-top:8px">
         <div style="height:8px;background:rgba(255,255,255,.08);border-radius:999px;overflow:hidden"><div id="pngProgressBar" style="width:0%;height:100%;background:currentColor;transition:width .08s linear"></div></div>
-        <div class="helper" id="pngProgressText" style="margin-top:5px">0%</div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:5px"><div class="helper" id="pngProgressText" style="flex:1">0%</div><button class="mini" id="pngCancelBtn">중단</button></div>
       </div>
-      <div class="note">기본 프레임은 60fps예요. Premiere용은 투명 PNG 시퀀스를 ZIP으로 묶어 내보냅니다. ZIP을 바로 가져오는 게 아니라 압축 해제 후 첫 PNG를 선택해 <b>Image Sequence</b>로 가져오면 돼요.</div>
+      <div class="note">기본 프레임은 60fps예요. Premiere용 PNG는 기본적으로 고른 폴더에 바로 저장돼요. 폴더 안 첫 PNG를 선택해 <b>Image Sequence</b>로 가져오면 돼요. ZIP 방식은 용량이 크면 여러 개로 나눠 받으니, 전부 같은 폴더에 압축 해제하세요.</div>
       <div class="note">투명 WebM은 VP9을 우선 사용합니다. 브라우저/편집기 조합에서 알파가 보존되지 않으면 Premiere용 PNG 시퀀스를 권장해요.</div>
     </div>
   </div>
@@ -236,7 +237,6 @@ dialog{border:none;border-radius:14px;padding:0;max-width:min(760px,92vw);width:
   </div>
 </dialog>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 (()=>{
 'use strict';
@@ -252,6 +252,7 @@ let layout='right'; let splitTimeMode='current';
 let originalSourceText=''; let pngCropToBox=true;
 // 현재가사적용 직후 다음 가사를 잡아두는 잠금. 재생위치 따라가기가 방금 찍은 가사로 선택을 되돌리는 것을 막음.
 let mapLockId=null;
+let exporting=false, pngCancel=false;
 let settings={
   displayMode:'stack', textAlign:'center', contentWidth:82, slotGap:210, anchorY:50, anchorX:12,
   prevOpacity:38,currentOpacity:100,nextOpacity:38, prevStateColor:'#ffffff',currentStateColor:'#8a52ff',nextStateColor:'#ffffff', overrideStateText:false,
@@ -432,7 +433,7 @@ function drawLyricsAtTime(t,allowSelectedFallback=true){
   let i=activeIndexAt(t);
   if(i<0){if(allowSelectedFallback&&!playing&&selectedCueId)i=selectedIndex();else return}
   if(i<0)return;
-  const p=(!playing&&!recording)?1:transitionProgress(i,t),e=easeOutCubic(p);
+  const p=(!playing&&!recording&&!exporting)?1:transitionProgress(i,t),e=easeOutCubic(p);
   if(isBoxCanvasMode()&&settings.boxMode!=='rows'){drawBoxLayoutAtTime(i,p,e);return}
   const gap=settings.slotGap;
   const anchorBase=H*settings.anchorY/100;
@@ -666,103 +667,134 @@ async function captureExportFrameBlob(){
   octx.drawImage(canvas,r.x,r.y,r.w,r.h,0,0,r.w,r.h);
   return new Promise((resolve,reject)=>off.toBlob(b=>b?resolve(b):reject(new Error('작업 박스 이미지를 만들지 못했습니다.')),'image/png'));
 }
-async function ensureJsZip(){
-  if(window.JSZip)return window.JSZip;
-  await new Promise((resolve,reject)=>{
-    const s=document.createElement('script');
-    s.src='https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
-    s.onload=resolve; s.onerror=()=>reject(new Error('JSZip 라이브러리를 불러오지 못했습니다. 인터넷 연결 상태를 확인해 주세요.'));
-    document.head.appendChild(s);
-  });
-  return window.JSZip;
+// 외부 라이브러리 없이 무압축(STORE) ZIP을 만든다. PNG는 이미 압축 포맷이라 무압축이 가장 빠르고,
+// Blob 조각을 참조만 하므로 메모리에 데이터를 복사하지 않는다.
+const CRC_TABLE=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
+function crc32(u8){let c=0xFFFFFFFF;for(let i=0;i<u8.length;i++)c=CRC_TABLE[(c^u8[i])&0xFF]^(c>>>8);return (c^0xFFFFFFFF)>>>0}
+async function blobCrc(blob){return crc32(new Uint8Array(await blob.arrayBuffer()))}
+class StoreZip{
+  constructor(){this.parts=[];this.central=[];this.offset=0;this.count=0}
+  add(name,blob,crc){
+    const nb=new TextEncoder().encode(name),size=blob.size;
+    const h=new DataView(new ArrayBuffer(30));
+    h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint16(6,0x0800,true);h.setUint16(8,0,true);h.setUint16(10,0,true);h.setUint16(12,0x21,true);
+    h.setUint32(14,crc,true);h.setUint32(18,size,true);h.setUint32(22,size,true);h.setUint16(26,nb.length,true);h.setUint16(28,0,true);
+    this.parts.push(h.buffer,nb,blob);
+    const c=new DataView(new ArrayBuffer(46));
+    c.setUint32(0,0x02014b50,true);c.setUint16(4,20,true);c.setUint16(6,20,true);c.setUint16(8,0x0800,true);c.setUint16(10,0,true);c.setUint16(12,0,true);c.setUint16(14,0x21,true);
+    c.setUint32(16,crc,true);c.setUint32(20,size,true);c.setUint32(24,size,true);c.setUint16(28,nb.length,true);c.setUint16(30,0,true);c.setUint16(32,0,true);c.setUint16(34,0,true);c.setUint16(36,0,true);c.setUint32(38,0,true);c.setUint32(42,this.offset,true);
+    this.central.push(c.buffer,nb);
+    this.offset+=30+nb.length+size;this.count++;
+  }
+  finish(){
+    let cd=0;for(const x of this.central)cd+=x.byteLength;
+    const e=new DataView(new ArrayBuffer(22));
+    e.setUint32(0,0x06054b50,true);e.setUint16(4,0,true);e.setUint16(6,0,true);e.setUint16(8,this.count,true);e.setUint16(10,this.count,true);e.setUint32(12,cd,true);e.setUint32(16,this.offset,true);e.setUint16(20,0,true);
+    return new Blob([...this.parts,...this.central,e.buffer],{type:'application/zip'});
+  }
+}
+// 같은 그림이 나오는 프레임은 한 번만 인코딩하기 위한 키 (전환 중이 아니면 같은 큐 동안 화면이 동일)
+function exportFrameKey(t){const i=activeIndexAt(t);if(i<0)return 'empty';const p=transitionProgress(i,t);return p>=1?`s${i}`:`t${i}_${p.toFixed(5)}`}
+const ZIP_PART_BYTES=1500*1024*1024, ZIP_PART_FILES=60000; // ZIP 한 개 한도 (일반 ZIP 4GB·65535개 제한 아래로)
+const yieldUI=()=>new Promise(r=>setTimeout(r,0)); // rAF는 백그라운드 탭에서 멈추므로 사용 안 함
+function explainExportError(err){
+  const m=String(err?.message||err||'');
+  if(err?.name==='RangeError'||/allocation|memory|out of memory/i.test(m))return '브라우저 메모리가 부족해요. 저장 방식을 "폴더에 바로 저장"으로 바꾸거나 프레임을 30fps로 낮춰 주세요.';
+  if(err?.name==='SecurityError'||err?.name==='NotAllowedError')return '이 화면에서는 폴더 저장 권한을 쓸 수 없어요. HTML 파일을 Chrome/Edge에서 직접 열거나 저장 방식을 ZIP으로 바꿔 주세요.';
+  if(err?.name==='QuotaExceededError')return '저장 공간이 부족해요. 디스크 여유 공간을 확인해 주세요.';
+  return m||'알 수 없는 오류';
 }
 async function exportPngSequence(){
   if(!cues.length){alert('먼저 가사를 불러와 주세요.');return}
-  const prevTime=audio.currentTime||0, prevPlaying=playing, prevRecording=recording, wasPaused=audio.paused;
+  if(!cues.some(c=>Number.isFinite(c.start))){alert('시간이 찍힌 가사가 없어요. 먼저 타이밍을 매핑해 주세요.');return}
+  let mode=$('pngSaveMode')?.value||'folder';
+  let dirHandle=null;
+  // 폴더 선택창은 클릭 직후(await 이전)에 열어야 브라우저가 허용함
+  if(mode==='folder'){
+    if(typeof window.showDirectoryPicker==='function'){
+      try{dirHandle=await window.showDirectoryPicker({id:'schat-png',mode:'readwrite'})}
+      catch(e){if(e?.name==='AbortError'){setStatus('PNG 내보내기를 취소했어요.');return}mode='zip';setStatus('폴더 저장을 쓸 수 없어 ZIP으로 저장할게요.')}
+    }else{mode='zip';setStatus('이 브라우저는 폴더 저장을 지원하지 않아 ZIP으로 저장할게요.')}
+  }
+  const prevTime=audio.currentTime||0, prevPlaying=playing;
   const prevDisabled=[$('recordBtn').disabled,$('stopRecordBtn').disabled,$('exportPngSeqBtn').disabled];
   $('recordBtn').disabled=true; $('stopRecordBtn').disabled=true; $('exportPngSeqBtn').disabled=true;
-  playing=false;
   try{ if(!audio.paused)audio.pause(); }catch(e){}
+  playing=false; cancelAnimationFrame(rafId); $('playBtn').textContent='▶';
+  exporting=true; pngCancel=false;
   try{
     setPngProgress(0,'준비 중');
-    setStatus('<b>PNG 내보내기 시작…</b> 출력 정보를 확인하고 있어요.');
-    await new Promise(r=>setTimeout(r,40));
-
     const duration=inferExportDuration();
     if(!(duration>0))throw new Error('출력 길이를 계산하지 못했어요. 음악 파일을 넣거나 마지막 가사의 종료 시간을 확인해 주세요.');
     const fps=+$('recordFps').value||60;
     const frameCount=Math.max(1,Math.ceil(duration*fps));
     const pad=Math.max(6,String(frameCount).length);
     const region=exportRegionRect();
+    const readme='Premiere Pro 사용법\n1) '+(mode==='zip'?'ZIP 파일을 모두 같은 폴더에 압축 해제\n2) ':'')+'첫 PNG 파일(lyrics_'+'1'.padStart(pad,'0')+'.png) 선택\n'+(mode==='zip'?'3) ':'2) ')+'Image Sequence / 이미지 시퀀스 체크 후 가져오기\n'+(mode==='zip'?'4) ':'3) ')+'필요 시 Interpret Footage에서 프레임레이트를 '+fps+'fps로 확인\n\nExport area: '+(pngCropToBox?'작업 박스 영역(+그림자/글로우 여백)':'전체 캔버스')+'\nCanvas: '+W+'x'+H+'\nOutput: '+region.w+'x'+region.h+'\nFrames: '+frameCount+'\nFPS: '+fps+'\nDuration: '+duration.toFixed(3)+'s\n';
+    const baseName=`premiere_png_sequence_${layout}_${pngCropToBox?'box':'full'}_${fps}fps`;
 
-    const JSZip=await ensureJsZip();
-    if(!JSZip)throw new Error('ZIP 모듈을 사용할 수 없습니다.');
-    const zip=new JSZip();
-    zip.file('README.txt', 'Premiere Pro 사용법\n1) ZIP 압축 해제\n2) 첫 PNG 파일(예: lyrics_000001.png) 선택\n3) Image Sequence / 이미지 시퀀스 체크 후 가져오기\n4) 필요 시 Interpret Footage에서 프레임레이트를 '+fps+'fps로 확인\n\nExport area: '+(pngCropToBox?'작업 박스 영역(+그림자/글로우 여백)':'전체 캔버스')+'\nCanvas: '+W+'x'+H+'\nOutput: '+region.w+'x'+region.h+'\nFrames: '+frameCount+'\nFPS: '+fps+'\nDuration: '+duration.toFixed(3)+'s\n');
-
-    const firstStart=cues.find(c=>Number.isFinite(c.start))?.start ?? 0;
-    let transparentBlob=null;
-    const updateEvery=Math.max(1,Math.min(12,Math.floor(frameCount/100)||1));
-    setStatus(`<b>PNG 시퀀스 추출 중…</b> ${pngCropToBox?'작업 박스':'전체 캔버스'} ${region.w}×${region.h} · ${fps}fps`);
-
-    for(let frame=0; frame<frameCount; frame++){
-      const t=frame/fps;
-      let blob;
-      if(t < firstStart-.0001){
-        if(!transparentBlob){
-          ctx.save();
-          ctx.setTransform(1,0,0,1,0,0);
-          ctx.clearRect(0,0,W,H);
-          ctx.restore();
-          transparentBlob=await captureExportFrameBlob();
-        }
-        blob=transparentBlob;
-      }else{
-        drawFrame(t,false,false);
-        blob=await captureExportFrameBlob();
-      }
-      const fname=`lyrics_${String(frame+1).padStart(pad,'0')}.png`;
-      zip.file(fname, blob, {binary:true});
-
-      if(frame%updateEvery===0 || frame===frameCount-1){
-        const pct=(frame+1)/frameCount*90;
-        setPngProgress(pct,`프레임 ${frame+1}/${frameCount}`);
-        setStatus(`<b>PNG 시퀀스 추출 중…</b> ${frame+1}/${frameCount} 프레임 · ${Math.round((frame+1)/frameCount*100)}%`);
-        await new Promise(r=>requestAnimationFrame(()=>r()));
-      }
+    // 저장 대상 준비
+    let zip=null, part=1, parts=0;
+    const readmeBlob=new Blob([readme],{type:'text/plain'});
+    async function writeFile(name,blob){
+      const fh=await dirHandle.getFileHandle(name,{create:true});
+      const w=await fh.createWritable(); await w.write(blob); await w.close();
+    }
+    async function flushZip(final){
+      if(!zip)return;
+      const zipBlob=zip.finish();
+      const needParts=!final||part>1;
+      downloadBlob(zipBlob, needParts?`${baseName}_part${String(part).padStart(2,'0')}.zip`:`${baseName}.zip`);
+      parts=part; part++; zip=null;
+      await new Promise(r=>setTimeout(r,800)); // 다운로드 시작 대기 + 메모리 회수 여유
+    }
+    if(mode==='zip'){
+      zip=new StoreZip(); zip.add('README.txt',readmeBlob,await blobCrc(readmeBlob));
+    }else{
+      await writeFile('README.txt',readmeBlob);
     }
 
-    setPngProgress(92,'ZIP 생성 중');
-    setStatus('<b>ZIP 생성 중…</b> PNG 프레임을 하나로 묶고 있어요.');
-    // PNG 자체가 이미 압축 포맷이라 재압축보다 STORE가 훨씬 빠르고 안정적임.
-    const zipBlob=await zip.generateAsync({type:'blob',compression:'STORE'}, meta=>{
-      if(meta.percent!=null){
-        const p=92+(meta.percent/100)*8;
-        setPngProgress(p,'ZIP 생성 중');
-        if(Math.round(meta.percent)%5===0)setStatus(`<b>ZIP 생성 중…</b> ${Math.round(meta.percent)}%`);
+    setStatus(`<b>PNG 시퀀스 추출 중…</b> ${pngCropToBox?'작업 박스':'전체 캔버스'} ${region.w}×${region.h} · ${fps}fps · ${mode==='zip'?'ZIP':'폴더 저장'}`);
+    let lastKey=null,lastBlob=null,lastCrc=0,encoded=0;
+    const updateEvery=Math.max(1,Math.floor(frameCount/200));
+    for(let frame=0; frame<frameCount; frame++){
+      if(pngCancel)throw Object.assign(new Error('사용자가 중단했어요.'),{name:'CancelError'});
+      const t=frame/fps, key=exportFrameKey(t);
+      let blob;
+      if(key===lastKey&&lastBlob){blob=lastBlob}
+      else{drawFrame(t,false,false);blob=await captureExportFrameBlob();lastKey=key;lastBlob=blob;lastCrc=mode==='zip'?await blobCrc(blob):0;encoded++}
+      const fname=`lyrics_${String(frame+1).padStart(pad,'0')}.png`;
+      if(mode==='zip'){
+        if(!zip)zip=new StoreZip();
+        zip.add(fname,blob,lastCrc);
+        if((zip.offset>=ZIP_PART_BYTES||zip.count>=ZIP_PART_FILES)&&frame<frameCount-1)await flushZip(false);
+      }else{
+        await writeFile(fname,blob);
       }
-    });
+      if(frame%updateEvery===0||frame===frameCount-1){
+        setPngProgress((frame+1)/frameCount*(mode==='zip'?98:100),`프레임 ${frame+1}/${frameCount}`);
+        await yieldUI();
+      }
+    }
+    if(mode==='zip')await flushZip(true);
     setPngProgress(100,'완료');
-    downloadBlob(zipBlob, `premiere_png_sequence_${layout}_${pngCropToBox?'box':'full'}_${fps}fps.zip`);
-    setStatus('Premiere용 PNG 시퀀스 ZIP을 저장했어요. 가사 시작 전 프레임은 완전 투명입니다.');
-    setTimeout(hidePngProgress,1800);
+    const savedMsg=mode==='zip'?(parts>1?`ZIP ${parts}개로 나눠 저장했어요. 모두 같은 폴더에 압축 해제하세요.`:'ZIP을 저장했어요.'):'고른 폴더에 PNG를 바로 저장했어요.';
+    setStatus(`${savedMsg} 총 ${frameCount}프레임 (실제 인코딩 ${encoded}장).`);
+    setTimeout(hidePngProgress,2500);
   }catch(err){
     console.error('PNG export failed',err);
-    setPngProgress(0,'실패');
-    alert('PNG 시퀀스를 내보내지 못했습니다.\n\n'+(err?.message||err));
-    setStatus('PNG 시퀀스 내보내기에 실패했어요.');
+    if(err?.name==='CancelError'){setPngProgress(0,'중단됨');setStatus('PNG 내보내기를 중단했어요.');setTimeout(hidePngProgress,1500)}
+    else{setPngProgress(0,'실패');const why=explainExportError(err);alert('PNG 시퀀스를 내보내지 못했습니다.\n\n'+why);setStatus('PNG 시퀀스 내보내기에 실패했어요: '+esc(why))}
   }finally{
-    playing=prevPlaying; recording=prevRecording;
+    exporting=false; pngCancel=false; playing=false;
     try{audio.currentTime=prevTime}catch(e){}
     drawFrame();
     $('recordBtn').disabled=prevDisabled[0]; $('stopRecordBtn').disabled=prevDisabled[1]; $('exportPngSeqBtn').disabled=prevDisabled[2];
-    // 내보내기 후 자동 재생은 하지 않음. 사용자가 다시 재생 버튼을 누르면 됨.
-    if(prevPlaying&&!wasPaused){$('playBtn').textContent='▶'}
   }
 }
 
 function showExportGuide(){
-  alert('Premiere용 PNG 시퀀스 사용법\n\n1. 메이커에서 “Premiere용 PNG 시퀀스 ZIP” 저장\n2. ZIP 압축 해제\n3. Premiere Pro에서 파일 > 가져오기\n4. 첫 PNG 파일만 선택 (예: lyrics_000001.png)\n5. Image Sequence / 이미지 시퀀스 체크\n6. 가져온 클립을 원본 영상 위 트랙에 올리기\n\n기본 프레임은 현재 선택된 '+(($('recordFps')&&$('recordFps').value)||60)+'fps를 사용합니다.\nPNG 작업 박스 추출이 켜져 있으면 전체 캔버스가 아니라 현재 작업 박스 크기로만 출력됩니다.');
+  alert('Premiere용 PNG 시퀀스 사용법\n\n1. 메이커에서 PNG 시퀀스 내보내기 (폴더 저장이면 빈 폴더를 하나 고르기)\n2. ZIP 방식이면 모든 ZIP을 같은 폴더에 압축 해제\n3. Premiere Pro에서 파일 > 가져오기\n4. 첫 PNG 파일만 선택 (예: lyrics_000001.png)\n5. Image Sequence / 이미지 시퀀스 체크\n6. 가져온 클립을 원본 영상 위 트랙에 올리기\n\n기본 프레임은 현재 선택된 '+(($('recordFps')&&$('recordFps').value)||60)+'fps를 사용합니다.\nPNG 작업 박스 추출이 켜져 있으면 전체 캔버스가 아니라 현재 작업 박스 크기로만 출력됩니다.');
 }
 async function startRecording(){if(!audio.src)return;initAudioGraph();if(audioCtx.state==='suspended')await audioCtx.resume();const fps=+$('recordFps').value||30,bitrate=+$('recordBitrate').value||20000000;const cstream=canvas.captureStream(fps),combined=new MediaStream([...cstream.getVideoTracks(),...streamDest.stream.getAudioTracks()]);let mime='';['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'].some(m=>{if(MediaRecorder.isTypeSupported(m)){mime=m;return true}});try{recorder=new MediaRecorder(combined,{mimeType:mime||undefined,videoBitsPerSecond:bitrate,audioBitsPerSecond:256000})}catch(e){alert('이 브라우저에서 WebM 녹화를 시작하지 못했습니다. Chrome 계열 브라우저를 권장합니다.');return}chunks=[];recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};recorder.onstop=()=>{recording=false;$('recordBtn').disabled=false;$('stopRecordBtn').disabled=true;const blob=new Blob(chunks,{type:'video/webm'});downloadBlob(blob,`가사오버레이_${layout}_${settings.outputBg}.webm`);setStatus('녹화를 저장했어요. 투명 알파가 편집기에서 보이지 않으면 크로마키 모드로 다시 출력해 주세요.')};mapLockId=null;audio.currentTime=0;drawFrame();recorder.start(1000);await audio.play();playing=true;recording=true;$('recordBtn').disabled=true;$('stopRecordBtn').disabled=false;$('playBtn').textContent='❚❚';loop();setStatus(`<b>녹화 중</b> · ${W}×${H} · ${fps}fps · ${settings.outputBg==='transparent'?'투명 배경':'색 배경'}`)}
 function stopRecording(){audio.pause();playing=false;recording=false;$('playBtn').textContent='▶';if(recorder&&recorder.state!=='inactive')recorder.stop();drawFrame()}
@@ -781,7 +813,7 @@ $('overrideStateText').onclick=()=>{settings.overrideStateText=!settings.overrid
 ['prevStateColor','currentStateColor','nextStateColor'].forEach(id=>{$(id)?.addEventListener('input',()=>{settings.overrideStateText=true;$('overrideStateText').classList.add('on');settings[id]=$(id).value;drawFrame()})});
 ['prevBoxColor','currentBoxColor','nextBoxColor'].forEach(id=>{$(id)?.addEventListener('input',()=>{settings[id]=$(id).value;drawFrame()})});
 ['displayMode','textAlign','contentWidth','slotGap','anchorY','anchorX','prevOpacity','currentOpacity','nextOpacity','prevStateColor','currentStateColor','nextStateColor','boxMode','panelColor','panelOpacity','boxRadius','boxPadding','segmentGap','boxX','boxY','boxWidth','boxHeight','prevBoxColor','currentBoxColor','nextBoxColor','prevBoxOpacity','currentBoxOpacity','nextBoxOpacity','animationType','slideDirection','solidBgColor','outputBg'].forEach(id=>bindSetting(id,'value',v=>['contentWidth','slotGap','anchorY','anchorX','prevOpacity','currentOpacity','nextOpacity','panelOpacity','boxRadius','boxPadding','segmentGap','boxX','boxY','boxWidth','boxHeight','prevBoxOpacity','currentBoxOpacity','nextBoxOpacity'].includes(id)?+v:v));bindSetting('animationDuration','value',v=>+v/100);bindSetting('animationDistance','value',v=>+v);
-$('outputBg').addEventListener('change',updateCanvasMeta);$('recordBtn').onclick=startRecording;$('stopRecordBtn').onclick=stopRecording;$('exportPngSeqBtn').onclick=exportPngSequence;$('exportGuideBtn').onclick=showExportGuide;$('pngCropToBoxBtn').onclick=()=>{pngCropToBox=!pngCropToBox;$('pngCropToBoxBtn').classList.toggle('on',pngCropToBox);$('pngCropToBoxBtn').textContent=pngCropToBox?'PNG는 작업 박스 영역만 추출':'PNG는 전체 캔버스 추출';};$('exportSrtBtn').onclick=exportSrt;$('saveProjectBtn').onclick=saveProject;$('loadProjectBtn').onclick=()=>$('projectInput').click();$('projectInput').onchange=e=>{if(e.target.files[0])loadProject(e.target.files[0]);e.target.value=''};
+$('outputBg').addEventListener('change',updateCanvasMeta);$('recordBtn').onclick=startRecording;$('stopRecordBtn').onclick=stopRecording;$('exportPngSeqBtn').onclick=exportPngSequence;$('exportGuideBtn').onclick=showExportGuide;$('pngCancelBtn').onclick=()=>{pngCancel=true};$('pngCropToBoxBtn').onclick=()=>{pngCropToBox=!pngCropToBox;$('pngCropToBoxBtn').classList.toggle('on',pngCropToBox);$('pngCropToBoxBtn').textContent=pngCropToBox?'PNG는 작업 박스 영역만 추출':'PNG는 전체 캔버스 추출';};$('exportSrtBtn').onclick=exportSrt;$('saveProjectBtn').onclick=saveProject;$('loadProjectBtn').onclick=()=>$('projectInput').click();$('projectInput').onchange=e=>{if(e.target.files[0])loadProject(e.target.files[0]);e.target.value=''};
 
 syncControlsFromSettings();updateModeUI();setCanvasLayout('right');syncBoxControls();renderCueList();renderEditor();updateRangeOutputs();drawFrame();
 })();
